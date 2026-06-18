@@ -1,0 +1,76 @@
+{
+  "identifier" : "ChickFocusStore",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "3.99",
+      "family" : "subscription",
+      "internalID" : "pro_monthly",
+      "localizations" : [
+        {
+          "description" : "Monthly Pro subscription",
+          "displayName" : "Pro Monthly",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.chickfocus.pro.monthly",
+      "recurringSubscriptionPeriod" : "P1M",
+      "referenceName" : "Pro Monthly",
+      "type" : "RecurringSubscription"
+    },
+    {
+      "displayPrice" : "9.99",
+      "family" : "subscription",
+      "internalID" : "pro_yearly",
+      "localizations" : [
+        {
+          "description" : "Yearly Pro subscription",
+          "displayName" : "Pro Yearly",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.chickfocus.pro.yearly",
+      "recurringSubscriptionPeriod" : "P1Y",
+      "referenceName" : "Pro Yearly",
+      "type" : "RecurringSubscription"
+    },
+    {
+      "displayPrice" : "24.99",
+      "internalID" : "pro_lifetime",
+      "localizations" : [
+        {
+          "description" : "Lifetime Pro access",
+          "displayName" : "Pro Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.chickfocus.pro.lifetime",
+      "referenceName" : "Pro Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "1627691759",
+    "_developerTeamID" : "4NG5UXJYS8",
+    "_lastSynchronizedDate" : 738892800
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "pro_group",
+      "localizations" : [
+
+      ],
+      "name" : "Pro",
+      "subscriptions" : [
+        "com.chickfocus.pro.monthly",
+        "com.chickfocus.pro.yearly"
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
