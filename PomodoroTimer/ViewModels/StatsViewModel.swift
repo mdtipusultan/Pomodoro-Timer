@@ -79,20 +79,20 @@ final class StatsViewModel {
         sessions.filter(\.wasSuccessful).count
     }
 
-    func chartData(from sessions: [FocusSession]) -> [ChartDataPoint] {
-        let successful = sessions.filter(\.wasSuccessful)
+    func chartData(from sessions: [FocusSession], isPro: Bool) -> [ChartDataPoint] {
+        let visible = filteredSessions(sessions.filter(\.wasSuccessful), isPro: isPro)
         switch selectedPeriod {
         case .day:
-            return hourlyChartData(successful)
+            return hourlyChartData(visible)
         case .week:
-            return dailyChartData(successful, days: 7)
+            return dailyChartData(visible, days: 7)
         case .month:
-            return dailyChartData(successful, days: 30)
+            return dailyChartData(visible, days: 30)
         }
     }
 
-    func groupedSessions(_ sessions: [FocusSession]) -> [DayGroup] {
-        let filtered = filteredSessions(sessions, isPro: true)
+    func groupedSessions(_ sessions: [FocusSession], isPro: Bool) -> [DayGroup] {
+        let filtered = filteredSessions(sessions, isPro: isPro)
         let grouped = Dictionary(grouping: filtered) { session in
             session.startDate.adjustedForNightOwl(nightOwlMode: nightOwlMode).startOfDay
         }

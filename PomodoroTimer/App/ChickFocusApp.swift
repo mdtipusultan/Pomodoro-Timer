@@ -39,6 +39,7 @@ struct ChickFocusApp: App {
             .preferredColorScheme(settingsViewModel.colorScheme)
             .onAppear {
                 PersistenceService.seedDefaultTagsIfNeeded(context: sharedModelContainer.mainContext)
+                settingsViewModel.applySavedAppIcon()
                 Task { await storeKit.loadProducts() }
             }
             .onReceive(NotificationCenter.default.publisher(for: .appDidEnterBackground)) { _ in

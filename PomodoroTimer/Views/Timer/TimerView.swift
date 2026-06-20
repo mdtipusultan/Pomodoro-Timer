@@ -125,7 +125,7 @@ struct TimerView: View {
             }
             .onChange(of: timerService.timeRemaining) { old, new in
                 if old > 0 && new <= 0 {
-                    viewModel?.handleSessionComplete(modelContext: modelContext, store: store)
+                    viewModel?.handleTimerReachedZero(modelContext: modelContext, store: store)
                 }
                 if new <= 10 && new > 0 && timerService.isRunning {
                     soundService.playTick()

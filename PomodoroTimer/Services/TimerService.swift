@@ -18,37 +18,31 @@ final class TimerService {
     var totalDuration: TimeInterval = 25 * 60
     var currentCycle: Int = 0
 
-    var focusDuration: TimeInterval {
-        get { UserDefaults.standard.double(forKey: Keys.focusDuration).nonZeroOr(25 * 60) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.focusDuration); reloadSettings() }
-    }
-
-    var shortBreakDuration: TimeInterval {
-        get { UserDefaults.standard.double(forKey: Keys.shortBreakDuration).nonZeroOr(5 * 60) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.shortBreakDuration) }
-    }
-
-    var longBreakDuration: TimeInterval {
-        get { UserDefaults.standard.double(forKey: Keys.longBreakDuration).nonZeroOr(15 * 60) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.longBreakDuration) }
-    }
-
-    var cyclesBeforeLongBreak: Int {
-        get {
-            let value = UserDefaults.standard.integer(forKey: Keys.cyclesBeforeLongBreak)
-            return value > 0 ? value : 4
+    var focusDuration: TimeInterval = 25 * 60 {
+        didSet {
+            UserDefaults.standard.set(focusDuration, forKey: Keys.focusDuration)
+            reloadSettings()
         }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.cyclesBeforeLongBreak) }
     }
 
-    var autoStartBreaks: Bool {
-        get { UserDefaults.standard.bool(forKey: Keys.autoStartBreaks) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.autoStartBreaks) }
+    var shortBreakDuration: TimeInterval = 5 * 60 {
+        didSet { UserDefaults.standard.set(shortBreakDuration, forKey: Keys.shortBreakDuration) }
     }
 
-    var nightOwlMode: Bool {
-        get { UserDefaults.standard.bool(forKey: Keys.nightOwlMode) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.nightOwlMode) }
+    var longBreakDuration: TimeInterval = 15 * 60 {
+        didSet { UserDefaults.standard.set(longBreakDuration, forKey: Keys.longBreakDuration) }
+    }
+
+    var cyclesBeforeLongBreak: Int = 4 {
+        didSet { UserDefaults.standard.set(cyclesBeforeLongBreak, forKey: Keys.cyclesBeforeLongBreak) }
+    }
+
+    var autoStartBreaks: Bool = false {
+        didSet { UserDefaults.standard.set(autoStartBreaks, forKey: Keys.autoStartBreaks) }
+    }
+
+    var nightOwlMode: Bool = false {
+        didSet { UserDefaults.standard.set(nightOwlMode, forKey: Keys.nightOwlMode) }
     }
 
     var progress: Double {
@@ -57,6 +51,7 @@ final class TimerService {
     }
 
     var sessionStartDate: Date?
+    var lastCompletedFocusStartDate: Date?
     var pausedAtDate: Date?
     var accumulatedPausedTime: TimeInterval = 0
 
@@ -105,8 +100,19 @@ final class TimerService {
     }
 
     init() {
+        focusDuration = UserDefaults.standard.double(forKey: Keys.focusDuration).nonZeroOr(25 * 60)
+        shortBreakDuration = UserDefaults.standard.double(forKey: Keys.shortBreakDuration).nonZeroOr(5 * 60)
+        longBreakDuration = UserDefaults.standard.double(forKey: Keys.longBreakDuration).nonZeroOr(15 * 60)
+        let savedCycles = UserDefaults.standard.integer(forKey: Keys.cyclesBeforeLongBreak)
+        cyclesBeforeLongBreak = savedCycles > 0 ? savedCycles : 4
+        autoStartBreaks = UserDefaults.standard.bool(forKey: Keys.autoStartBreaks)
+        nightOwlMode = UserDefaults.standard.bool(forKey: Keys.nightOwlMode)
         reloadSettings()
         restoreFromPersistence()
+    }
+
+    func clearLastCompletedFocusStartDate() {
+        lastCompletedFocusStartDate = nil
     }
 
     func reloadSettings() {
@@ -215,6 +221,7 @@ final class TimerService {
 
         switch state {
         case .focusing:
+            lastCompletedFocusStartDate = sessionStartDate
             currentCycle += 1
             let isLongBreak = currentCycle % cyclesBeforeLongBreak == 0
             if autoStartBreaks {

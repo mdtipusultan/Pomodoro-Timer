@@ -7,37 +7,27 @@ struct TimerSettingsView: View {
     @State private var showPaywall = false
 
     var body: some View {
+        @Bindable var timer = timerService
+
         List {
             Section("Durations") {
-                Stepper("Focus: \(Int(timerService.focusDuration / 60)) min") {
-                    let current = Int(timerService.focusDuration / 60)
-                    if current < 120 { timerService.focusDuration = TimeInterval((current + 5) * 60) }
-                } onDecrement: {
-                    let current = Int(timerService.focusDuration / 60)
-                    if current > 5 { timerService.focusDuration = TimeInterval((current - 5) * 60) }
+                Stepper(value: focusMinutesBinding, in: 5...120, step: 5) {
+                    Text("Focus: \(Int(timer.focusDuration / 60)) min")
                 }
 
-                Stepper("Short Break: \(Int(timerService.shortBreakDuration / 60)) min") {
-                    let current = Int(timerService.shortBreakDuration / 60)
-                    if current < 30 { timerService.shortBreakDuration = TimeInterval((current + 1) * 60) }
-                } onDecrement: {
-                    let current = Int(timerService.shortBreakDuration / 60)
-                    if current > 1 { timerService.shortBreakDuration = TimeInterval((current - 1) * 60) }
+                Stepper(value: shortBreakMinutesBinding, in: 1...30, step: 1) {
+                    Text("Short Break: \(Int(timer.shortBreakDuration / 60)) min")
                 }
 
                 if store.isProUser {
-                    Stepper("Long Break: \(Int(timerService.longBreakDuration / 60)) min") {
-                        let current = Int(timerService.longBreakDuration / 60)
-                        if current < 60 { timerService.longBreakDuration = TimeInterval((current + 5) * 60) }
-                    } onDecrement: {
-                        let current = Int(timerService.longBreakDuration / 60)
-                        if current > 5 { timerService.longBreakDuration = TimeInterval((current - 5) * 60) }
+                    Stepper(value: longBreakMinutesBinding, in: 5...60, step: 5) {
+                        Text("Long Break: \(Int(timer.longBreakDuration / 60)) min")
                     }
                 } else {
                     HStack {
                         Text("Long Break")
                         Spacer()
-                        Text("\(Int(timerService.longBreakDuration / 60)) min")
+                        Text("\(Int(timer.longBreakDuration / 60)) min")
                             .foregroundStyle(.secondary)
                         Image(systemName: "lock.fill")
                             .font(.caption)
@@ -46,24 +36,20 @@ struct TimerSettingsView: View {
                     .onTapGesture { showPaywall = true }
                 }
 
-                Stepper("Cycles before long break: \(timerService.cyclesBeforeLongBreak)", value: Binding(
-                    get: { timerService.cyclesBeforeLongBreak },
-                    set: { timerService.cyclesBeforeLongBreak = $0 }
-                ), in: 1...8)
+                Stepper(value: $timer.cyclesBeforeLongBreak, in: 1...8) {
+                    Text("Cycles before long break: \(timer.cyclesBeforeLongBreak)")
+                }
             }
 
             Section {
-                Toggle("Auto-start breaks", isOn: Binding(
-                    get: { timerService.autoStartBreaks },
-                    set: { timerService.autoStartBreaks = $0 }
-                ))
+                Toggle("Auto-start breaks", isOn: $timer.autoStartBreaks)
 
                 Toggle("Night Owl mode", isOn: Binding(
                     get: { settings.nightOwlMode },
                     set: { newValue in
                         if store.isProUser || !newValue {
                             settings.nightOwlMode = newValue
-                            timerService.nightOwlMode = newValue
+                            timer.nightOwlMode = newValue
                         } else {
                             showPaywall = true
                         }
@@ -75,6 +61,27 @@ struct TimerSettingsView: View {
         .sheet(isPresented: $showPaywall) {
             PaywallView()
         }
+    }
+
+    private var focusMinutesBinding: Binding<Int> {
+        Binding(
+            get: { Int(timerService.focusDuration / 60) },
+            set: { timerService.focusDuration = TimeInterval($0 * 60) }
+        )
+    }
+
+    private var shortBreakMinutesBinding: Binding<Int> {
+        Binding(
+            get: { Int(timerService.shortBreakDuration / 60) },
+            set: { timerService.shortBreakDuration = TimeInterval($0 * 60) }
+        )
+    }
+
+    private var longBreakMinutesBinding: Binding<Int> {
+        Binding(
+            get: { Int(timerService.longBreakDuration / 60) },
+            set: { timerService.longBreakDuration = TimeInterval($0 * 60) }
+        )
     }
 }
 

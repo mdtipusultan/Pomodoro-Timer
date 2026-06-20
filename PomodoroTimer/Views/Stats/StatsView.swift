@@ -13,6 +13,10 @@ struct StatsView: View {
     @State private var showPaywall = false
     @State private var showManualAdd = false
 
+    private var timelineGroups: [StatsViewModel.DayGroup] {
+        viewModel.groupedSessions(sessions, isPro: store.isProUser)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -52,11 +56,15 @@ struct StatsView: View {
                     )
                 }
             }
-            .onAppear {
-                viewModel.nightOwlMode = settings.nightOwlMode
-                viewModel.weekStartsOnMonday = settings.weekStartsOnMonday
-            }
+            .onAppear { syncSettings() }
+            .onChange(of: settings.nightOwlMode) { _, _ in syncSettings() }
+            .onChange(of: settings.weekStartsOnMonday) { _, _ in syncSettings() }
         }
+    }
+
+    private func syncSettings() {
+        viewModel.nightOwlMode = settings.nightOwlMode
+        viewModel.weekStartsOnMonday = settings.weekStartsOnMonday
     }
 
     private var headerCards: some View {
@@ -95,7 +103,7 @@ struct StatsView: View {
             }
             .pickerStyle(.segmented)
 
-            Chart(viewModel.chartData(from: sessions)) { point in
+            Chart(viewModel.chartData(from: sessions, isPro: store.isProUser)) { point in
                 BarMark(
                     x: .value("Label", point.label),
                     y: .value("Hours", point.hours)
@@ -113,7 +121,7 @@ struct StatsView: View {
 
     private var timelineSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Timeline")
+            Text("History")
                 .font(.headline)
 
             if !store.isProUser {
@@ -122,15 +130,31 @@ struct StatsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            TimelineView(
-                groups: viewModel.groupedSessions(sessions),
-                use24Hour: settings.use24HourTime,
-                isPro: store.isProUser,
-                onDelete: { session in
-                    viewModel.deleteSession(session, context: modelContext)
-                },
-                onShowPaywall: { showPaywall = true }
-            )
+            if timelineGroups.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.largeTitle)
+                        .foregroundStyle(Color.appSecondary)
+                    Text("No sessions yet")
+                        .font(.headline)
+                    Text("Complete a focus session and it will appear here.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 32)
+            } else {
+                TimelineView(
+                    groups: timelineGroups,
+                    use24Hour: settings.use24HourTime,
+                    isPro: store.isProUser,
+                    onDelete: { session in
+                        viewModel.deleteSession(session, context: modelContext)
+                    },
+                    onShowPaywall: { showPaywall = true }
+                )
+            }
         }
     }
 }

@@ -8,6 +8,8 @@ struct SettingsView: View {
     @State private var showPaywall = false
 
     var body: some View {
+        @Bindable var settings = settings
+
         NavigationStack {
             List {
                 Section("Timer") {
@@ -15,18 +17,12 @@ struct SettingsView: View {
                         TimerSettingsView()
                     }
 
-                    Picker("Week starts on", selection: Binding(
-                        get: { settings.weekStartsOnMonday },
-                        set: { settings.weekStartsOnMonday = $0 }
-                    )) {
+                    Picker("Week starts on", selection: $settings.weekStartsOnMonday) {
                         Text("Sunday").tag(false)
                         Text("Monday").tag(true)
                     }
 
-                    Picker("Time format", selection: Binding(
-                        get: { settings.use24HourTime },
-                        set: { settings.use24HourTime = $0 }
-                    )) {
+                    Picker("Time format", selection: $settings.use24HourTime) {
                         Text("12-hour").tag(false)
                         Text("24-hour").tag(true)
                     }
@@ -49,38 +45,17 @@ struct SettingsView: View {
                         get: { soundService.breakSoundEnabled },
                         set: { soundService.breakSoundEnabled = $0 }
                     ))
-                    Toggle("Haptic feedback", isOn: Binding(
-                        get: { settings.hapticsEnabled },
-                        set: { settings.hapticsEnabled = $0 }
-                    ))
+                    Toggle("Haptic feedback", isOn: $settings.hapticsEnabled)
                 }
 
                 Section("Appearance") {
-                    Picker("Theme", selection: Binding(
-                        get: { settings.themeSelection },
-                        set: { newValue in
-                            if newValue == "dark" && !store.isProUser {
-                                showPaywall = true
-                            } else {
-                                settings.themeSelection = newValue
-                            }
-                        }
-                    )) {
+                    Picker("Theme", selection: themeBinding) {
                         Text("System").tag("system")
                         Text("Light").tag("light")
                         Text("Dark").tag("dark")
                     }
 
-                    Picker("App Icon", selection: Binding(
-                        get: { settings.selectedAppIcon },
-                        set: { newValue in
-                            if newValue != "default" && !store.isProUser {
-                                showPaywall = true
-                            } else {
-                                settings.selectedAppIcon = newValue
-                            }
-                        }
-                    )) {
+                    Picker("App Icon", selection: appIconBinding) {
                         Text("Default").tag("default")
                         Text("Midnight").tag("midnight")
                         Text("Forest").tag("forest")
@@ -113,6 +88,32 @@ struct SettingsView: View {
                 PaywallView()
             }
         }
+    }
+
+    private var themeBinding: Binding<String> {
+        Binding(
+            get: { settings.themeSelection },
+            set: { newValue in
+                if newValue == "dark" && !store.isProUser {
+                    showPaywall = true
+                } else {
+                    settings.themeSelection = newValue
+                }
+            }
+        )
+    }
+
+    private var appIconBinding: Binding<String> {
+        Binding(
+            get: { settings.selectedAppIcon },
+            set: { newValue in
+                if newValue != "default" && !store.isProUser {
+                    showPaywall = true
+                } else {
+                    settings.selectedAppIcon = newValue
+                }
+            }
+        )
     }
 }
 

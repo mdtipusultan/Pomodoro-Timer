@@ -101,32 +101,34 @@ final class TimerViewModel {
         showStopConfirmation = false
     }
 
-    func handleSessionComplete(modelContext: ModelContext, store: StoreKitService) {
-        let wasFocusing = timerService.state == .focusing ||
-            (timerService.state == .idle && timerService.currentCycle > 0)
+    func handleTimerReachedZero(modelContext: ModelContext, store: StoreKitService) {
+        switch timerService.state {
+        case .shortBreak, .longBreak:
+            saveCompletedSession(modelContext: modelContext, store: store)
+            showSuccessAnimation = true
+            soundService.playSessionComplete()
+            appState.petAnimationState = .success
+            heartsToday += 1
 
-        if timerService.state == .focusing || timerService.currentCycle > 0 {
-            if timerService.state != .shortBreak && timerService.state != .longBreak {
-                saveCompletedSession(modelContext: modelContext, store: store)
-                showSuccessAnimation = true
-                soundService.playSessionComplete()
-                appState.petAnimationState = .success
-                heartsToday += 1
+            if timerService.isRunning {
+                soundService.playBreakStart()
+                appState.petAnimationState = .breakTime
+                notificationService.scheduleSessionEnd(
+                    in: timerService.timeRemaining,
+                    isBreak: true
+                )
             }
-        }
+            updateLiveActivity()
 
-        if timerService.isOnBreak {
-            soundService.playBreakStart()
-            appState.petAnimationState = .breakTime
-            notificationService.scheduleSessionEnd(
-                in: timerService.timeRemaining,
-                isBreak: true
-            )
-        }
+        case .idle:
+            notificationService.cancelPendingNotifications()
+            appState.petAnimationState = .idle
+            liveActivityService.end()
 
-        updateLiveActivity()
+        default:
+            break
+        }
     }
-
     func skipBreak() {
         timerService.skipBreak()
         appState.petAnimationState = .idle
@@ -144,12 +146,12 @@ final class TimerViewModel {
     }
 
     private func saveCompletedSession(modelContext: ModelContext, store: StoreKitService) {
-        let actualDuration = timerService.totalDuration - timerService.timeRemaining
+        let startDate = timerService.lastCompletedFocusStartDate ?? timerService.sessionStartDate ?? Date()
         let session = FocusSession(
-            startDate: timerService.sessionStartDate ?? Date(),
+            startDate: startDate,
             endDate: Date(),
             duration: timerService.focusDuration,
-            actualDuration: max(actualDuration, timerService.focusDuration * 0.9),
+            actualDuration: timerService.focusDuration,
             isCompleted: true,
             isFailed: false,
             tag: selectedTag
@@ -167,6 +169,7 @@ final class TimerViewModel {
         modelContext.insert(pet)
         appState.incrementUnviewedPets()
         try? modelContext.save()
+        timerService.clearLastCompletedFocusStartDate()
     }
 
     private func saveFailedSession(modelContext: ModelContext) {

@@ -1,66 +1,36 @@
 import Foundation
 import Observation
 import SwiftUI
+import UIKit
 
 @Observable
 @MainActor
 final class SettingsViewModel {
-    var focusMinutes: Int {
-        get { Int(UserDefaults.standard.double(forKey: TimerService.Keys.focusDuration).nonZeroOr(25 * 60) / 60) }
-        set { UserDefaults.standard.set(TimeInterval(newValue * 60), forKey: TimerService.Keys.focusDuration) }
+    var weekStartsOnMonday: Bool = false {
+        didSet { UserDefaults.standard.set(weekStartsOnMonday, forKey: Keys.weekStartsOnMonday) }
     }
 
-    var shortBreakMinutes: Int {
-        get { Int(UserDefaults.standard.double(forKey: TimerService.Keys.shortBreakDuration).nonZeroOr(300) / 60) }
-        set { UserDefaults.standard.set(TimeInterval(newValue * 60), forKey: TimerService.Keys.shortBreakDuration) }
+    var use24HourTime: Bool = false {
+        didSet { UserDefaults.standard.set(use24HourTime, forKey: Keys.use24HourTime) }
     }
 
-    var longBreakMinutes: Int {
-        get { Int(UserDefaults.standard.double(forKey: TimerService.Keys.longBreakDuration).nonZeroOr(900) / 60) }
-        set { UserDefaults.standard.set(TimeInterval(newValue * 60), forKey: TimerService.Keys.longBreakDuration) }
+    var hapticsEnabled: Bool = true {
+        didSet { UserDefaults.standard.set(hapticsEnabled, forKey: Keys.hapticsEnabled) }
     }
 
-    var cyclesBeforeLongBreak: Int {
-        get {
-            let v = UserDefaults.standard.integer(forKey: TimerService.Keys.cyclesBeforeLongBreak)
-            return v > 0 ? v : 4
+    var nightOwlMode: Bool = false {
+        didSet { UserDefaults.standard.set(nightOwlMode, forKey: TimerService.Keys.nightOwlMode) }
+    }
+
+    var themeSelection: String = "system" {
+        didSet { UserDefaults.standard.set(themeSelection, forKey: Keys.themeSelection) }
+    }
+
+    var selectedAppIcon: String = "default" {
+        didSet {
+            UserDefaults.standard.set(selectedAppIcon, forKey: Keys.selectedAppIcon)
+            AppIconService.apply(selection: selectedAppIcon)
         }
-        set { UserDefaults.standard.set(newValue, forKey: TimerService.Keys.cyclesBeforeLongBreak) }
-    }
-
-    var autoStartBreaks: Bool {
-        get { UserDefaults.standard.bool(forKey: TimerService.Keys.autoStartBreaks) }
-        set { UserDefaults.standard.set(newValue, forKey: TimerService.Keys.autoStartBreaks) }
-    }
-
-    var nightOwlMode: Bool {
-        get { UserDefaults.standard.bool(forKey: TimerService.Keys.nightOwlMode) }
-        set { UserDefaults.standard.set(newValue, forKey: TimerService.Keys.nightOwlMode) }
-    }
-
-    var weekStartsOnMonday: Bool {
-        get { UserDefaults.standard.bool(forKey: "weekStartsOnMonday") }
-        set { UserDefaults.standard.set(newValue, forKey: "weekStartsOnMonday") }
-    }
-
-    var use24HourTime: Bool {
-        get { UserDefaults.standard.bool(forKey: "use24HourTime") }
-        set { UserDefaults.standard.set(newValue, forKey: "use24HourTime") }
-    }
-
-    var hapticsEnabled: Bool {
-        get { UserDefaults.standard.object(forKey: "hapticsEnabled") as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: "hapticsEnabled") }
-    }
-
-    var themeSelection: String {
-        get { UserDefaults.standard.string(forKey: "themeSelection") ?? "system" }
-        set { UserDefaults.standard.set(newValue, forKey: "themeSelection") }
-    }
-
-    var selectedAppIcon: String {
-        get { UserDefaults.standard.string(forKey: "selectedAppIcon") ?? "default" }
-        set { UserDefaults.standard.set(newValue, forKey: "selectedAppIcon") }
     }
 
     var colorScheme: ColorScheme? {
@@ -72,10 +42,25 @@ final class SettingsViewModel {
     }
 
     let appVersion: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-}
 
-private extension Double {
-    func nonZeroOr(_ fallback: Double) -> Double {
-        self > 0 ? self : fallback
+    init() {
+        weekStartsOnMonday = UserDefaults.standard.bool(forKey: Keys.weekStartsOnMonday)
+        use24HourTime = UserDefaults.standard.bool(forKey: Keys.use24HourTime)
+        hapticsEnabled = UserDefaults.standard.object(forKey: Keys.hapticsEnabled) as? Bool ?? true
+        nightOwlMode = UserDefaults.standard.bool(forKey: TimerService.Keys.nightOwlMode)
+        themeSelection = UserDefaults.standard.string(forKey: Keys.themeSelection) ?? "system"
+        selectedAppIcon = UserDefaults.standard.string(forKey: Keys.selectedAppIcon) ?? "default"
+    }
+
+    func applySavedAppIcon() {
+        AppIconService.apply(selection: selectedAppIcon)
+    }
+
+    private enum Keys {
+        static let weekStartsOnMonday = "weekStartsOnMonday"
+        static let use24HourTime = "use24HourTime"
+        static let hapticsEnabled = "hapticsEnabled"
+        static let themeSelection = "themeSelection"
+        static let selectedAppIcon = "selectedAppIcon"
     }
 }
