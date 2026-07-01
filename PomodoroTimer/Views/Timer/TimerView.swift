@@ -116,6 +116,7 @@ struct TimerView: View {
                     )
                 }
                 viewModel?.refreshHeartsToday(sessions: sessions)
+                viewModel?.processPendingPhaseCompletion(modelContext: modelContext, store: store)
                 if viewModel?.selectedTag == nil {
                     viewModel?.selectedTag = tags.first
                 }
@@ -123,10 +124,10 @@ struct TimerView: View {
             .onChange(of: sessions.count) { _, _ in
                 viewModel?.refreshHeartsToday(sessions: sessions)
             }
-            .onChange(of: timerService.timeRemaining) { old, new in
-                if old > 0 && new <= 0 {
-                    viewModel?.handleTimerReachedZero(modelContext: modelContext, store: store)
-                }
+            .onChange(of: timerService.phaseCompletionCount) { _, _ in
+                viewModel?.processPendingPhaseCompletion(modelContext: modelContext, store: store)
+            }
+            .onChange(of: timerService.timeRemaining) { _, new in
                 if new <= 10 && new > 0 && timerService.isRunning {
                     soundService.playTick()
                 }

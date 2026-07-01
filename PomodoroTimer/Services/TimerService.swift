@@ -82,6 +82,9 @@ final class TimerService {
         isOnBreak ? "break" : "focus"
     }
 
+    private(set) var lastCompletedPhase: TimerState?
+    private(set) var phaseCompletionCount: Int = 0
+
     private var tickTask: Task<Void, Never>?
     private var endDate: Date?
 
@@ -219,6 +222,8 @@ final class TimerService {
         tickTask?.cancel()
         tickTask = nil
 
+        let completedPhase = state
+
         switch state {
         case .focusing:
             lastCompletedFocusStartDate = sessionStartDate
@@ -242,8 +247,11 @@ final class TimerService {
             endDate = nil
             clearPersistence()
         default:
-            break
+            return
         }
+
+        lastCompletedPhase = completedPhase
+        phaseCompletionCount += 1
     }
 
     func tick() {

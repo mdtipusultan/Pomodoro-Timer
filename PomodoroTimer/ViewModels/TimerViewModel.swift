@@ -19,6 +19,7 @@ final class TimerViewModel {
     var heartsToday: Int = 0
 
     private var observationTask: Task<Void, Never>?
+    private var lastHandledPhaseCompletionCount = 0
 
     init(
         timerService: TimerService,
@@ -101,26 +102,35 @@ final class TimerViewModel {
         showStopConfirmation = false
     }
 
-    func handleTimerReachedZero(modelContext: ModelContext, store: StoreKitService) {
-        switch timerService.state {
-        case .shortBreak, .longBreak:
+    func processPendingPhaseCompletion(modelContext: ModelContext, store: StoreKitService) {
+        guard timerService.phaseCompletionCount > lastHandledPhaseCompletionCount,
+              let phase = timerService.lastCompletedPhase else { return }
+        lastHandledPhaseCompletionCount = timerService.phaseCompletionCount
+        handlePhaseCompleted(phase, modelContext: modelContext, store: store)
+    }
+
+    func handlePhaseCompleted(_ completedPhase: TimerService.TimerState, modelContext: ModelContext, store: StoreKitService) {
+        switch completedPhase {
+        case .focusing:
             saveCompletedSession(modelContext: modelContext, store: store)
             showSuccessAnimation = true
             soundService.playSessionComplete()
             appState.petAnimationState = .success
             heartsToday += 1
 
-            if timerService.isRunning {
+            if timerService.isOnBreak {
                 soundService.playBreakStart()
                 appState.petAnimationState = .breakTime
-                notificationService.scheduleSessionEnd(
-                    in: timerService.timeRemaining,
-                    isBreak: true
-                )
+                if timerService.isRunning {
+                    notificationService.scheduleSessionEnd(
+                        in: timerService.timeRemaining,
+                        isBreak: true
+                    )
+                }
             }
             updateLiveActivity()
 
-        case .idle:
+        case .shortBreak, .longBreak:
             notificationService.cancelPendingNotifications()
             appState.petAnimationState = .idle
             liveActivityService.end()
