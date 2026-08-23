@@ -16,6 +16,8 @@ struct OnboardingView: View {
                     animateIcon: animateIcon
                 )
                 .tag(0)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Onboarding page 1 of 3. Meet your focus companion. Raise a virtual cat by completing focus sessions.")
 
                 OnboardingPageView(
                     icon: "timer",
@@ -25,6 +27,8 @@ struct OnboardingView: View {
                     animateIcon: animateIcon
                 )
                 .tag(1)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Onboarding page 2 of 3. The Pomodoro method. Focus for 25 minutes, rest for 5 minutes.")
 
                 OnboardingPageView(
                     icon: "bell.fill",
@@ -34,52 +38,56 @@ struct OnboardingView: View {
                     animateIcon: animateIcon
                 )
                 .tag(2)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Onboarding page 3 of 3. Stay on track. Enable notifications to get reminders.")
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
+            .indexViewStyle(.page(backgroundDisplayMode: .always))
             .onChange(of: currentPage) { _, _ in
                 animateIcon.toggle()
+                HapticManager.shared.selection()
             }
 
-            VStack(spacing: 12) {
+            VStack(spacing: 14) {
                 if currentPage < 2 {
                     Button {
-                        withAnimation { currentPage += 1 }
+                        HapticManager.shared.buttonTap()
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { 
+                            currentPage += 1 
+                        }
                     } label: {
                         Text("Continue")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.appOrange)
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
+                    .buttonStyle(AppPrimaryButtonStyle())
                 } else {
                     Button {
+                        HapticManager.shared.buttonTap()
                         Task {
                             _ = await NotificationService.shared.requestAuthorization()
-                            hasCompletedOnboarding = true
+                            withAnimation {
+                                hasCompletedOnboarding = true
+                            }
                         }
                     } label: {
                         Text("Enable Notifications")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.appOrange)
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
+                    .buttonStyle(AppPrimaryButtonStyle())
 
                     Button("Skip for now") {
-                        hasCompletedOnboarding = true
+                        HapticManager.shared.buttonTap()
+                        withAnimation {
+                            hasCompletedOnboarding = true
+                        }
                     }
-                    .font(.subheadline)
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
+                    .padding(.top, 4)
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.bottom, 48)
+            .padding(.bottom, 52)
         }
-        .background(Color.appBackground)
+        .appScreenBackground()
         .onAppear { animateIcon = true }
     }
 }

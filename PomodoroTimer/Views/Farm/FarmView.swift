@@ -7,9 +7,9 @@ struct FarmView: View {
     @State private var selectedPet: Pet?
 
     private let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
     ]
 
     var body: some View {
@@ -19,32 +19,21 @@ struct FarmView: View {
                     emptyState
                 } else {
                     ScrollView {
-                        LazyVGrid(columns: columns, spacing: 20) {
+                        LazyVGrid(columns: columns, spacing: 12) {
                             ForEach(petViewModel.petsSorted(pets), id: \.id) { pet in
                                 Button {
                                     selectedPet = pet
                                 } label: {
-                                    VStack(spacing: 8) {
-                                        Image(systemName: pet.type.systemImage)
-                                            .font(.system(size: 40))
-                                            .foregroundStyle(pet.type.color)
-                                        Text(pet.raisedDate.formattedShortDate())
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(Color.appSurface)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    petCard(pet)
                                 }
                                 .buttonStyle(.plain)
                             }
                         }
-                        .padding()
+                        .padding(16)
                     }
                 }
             }
-            .background(Color.appBackground)
+            .appScreenBackground()
             .navigationTitle("Farm")
             .sheet(isPresented: Binding(
                 get: { selectedPet != nil },
@@ -57,17 +46,68 @@ struct FarmView: View {
         }
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "cat.fill")
-                .font(.system(size: 60))
-                //.foregroundStyle(Color.appOrange.opacity(0.5))
-            Text("Complete a focus session to grow your first companion!")
-                .font(.body)
+    private func petCard(_ pet: Pet) -> some View {
+        VStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(pet.type.color.opacity(0.16))
+                    .frame(width: 62, height: 62)
+                Image(systemName: pet.type.systemImage)
+                    .font(.system(size: 28))
+                    .foregroundStyle(pet.type.color)
+            }
+
+            Text(pet.name ?? pet.type.displayName)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .foregroundStyle(.primary)
+
+            Text(pet.raisedDate.formattedShortDate())
+                .font(.caption2)
                 .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 8)
+        .appCardStyle(radius: 18)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(pet.name ?? pet.type.displayName), raised on \(pet.raisedDate.formattedShortDate())")
+        .accessibilityHint("Double tap to view details")
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(Color.appOrange.opacity(0.12))
+                    .frame(width: 140, height: 140)
+                    .blur(radius: 16)
+                
+                Circle()
+                    .fill(Color.appOrange.opacity(0.14))
+                    .frame(width: 130, height: 130)
+                
+                Image(systemName: "cat.fill")
+                    .font(.system(size: 56))
+                    .foregroundStyle(Color.appOrange)
+                    .symbolEffect(.pulse, options: .repeating)
+            }
+
+            VStack(spacing: 12) {
+                Text("Your farm is empty")
+                    .font(.title2.bold())
+
+                Text("Complete a focus session to grow your first companion. Each successful session brings a new friend to your farm!")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 32)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Your farm is empty. Complete a focus session to grow your first companion.")
     }
 }
 

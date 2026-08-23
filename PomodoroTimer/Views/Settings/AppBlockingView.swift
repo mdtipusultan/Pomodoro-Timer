@@ -40,6 +40,8 @@ struct AppBlockingView: View {
                 }
             }
         }
+        .appThemedList()
+        .tint(.appOrange)
         .navigationTitle("App Blocking")
         .task {
             if !blockingService.isAuthorized {

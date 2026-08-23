@@ -50,6 +50,7 @@ final class TimerViewModel {
         }
         timerService.start()
         soundService.playSessionStart()
+        HapticManager.shared.timerStart()
         notificationService.scheduleSessionEnd(
             in: timerService.timeRemaining,
             isBreak: false
@@ -65,12 +66,14 @@ final class TimerViewModel {
 
     func pause() {
         timerService.pause()
+        HapticManager.shared.timerPause()
         notificationService.cancelPendingNotifications()
         appState.petAnimationState = .idle
     }
 
     func resume() {
         timerService.start()
+        HapticManager.shared.timerStart()
         notificationService.scheduleSessionEnd(
             in: timerService.timeRemaining,
             isBreak: timerService.isOnBreak
@@ -86,9 +89,11 @@ final class TimerViewModel {
             saveFailedSession(modelContext: modelContext)
             showFailedAnimation = true
             soundService.playSessionFailed()
+            HapticManager.shared.sessionFailed()
             appState.petAnimationState = .failed
         } else {
             timerService.stop(forced: forced)
+            HapticManager.shared.timerStop()
         }
 
         notificationService.cancelPendingNotifications()
@@ -115,6 +120,7 @@ final class TimerViewModel {
             saveCompletedSession(modelContext: modelContext, store: store)
             showSuccessAnimation = true
             soundService.playSessionComplete()
+            HapticManager.shared.sessionComplete()
             appState.petAnimationState = .success
             heartsToday += 1
 

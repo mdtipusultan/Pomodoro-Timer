@@ -11,9 +11,11 @@ struct FloatingTimerView: View {
             Text(timeRemaining.formattedTimer)
                 .font(.caption.bold().monospacedDigit())
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
         .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().stroke(Color.appOrange.opacity(0.25), lineWidth: 1))
+        .shadow(color: Color.appShadow, radius: 6, y: 2)
     }
 }
 

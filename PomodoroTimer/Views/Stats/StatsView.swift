@@ -25,9 +25,9 @@ struct StatsView: View {
                     chartSection
                     timelineSection
                 }
-                .padding()
+                .padding(16)
             }
-            .background(Color.appBackground)
+            .appScreenBackground()
             .navigationTitle("Stats")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -38,11 +38,13 @@ struct StatsView: View {
                             showPaywall = true
                         }
                     } label: {
-                        Image(systemName: "plus")
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(Color.appOrange)
                     }
                 }
             }
-            .sheet(isPresented: $showPaywall) {
+            .fullScreenCover(isPresented: $showPaywall) {
                 PaywallView()
             }
             .sheet(isPresented: $showManualAdd) {
@@ -73,29 +75,34 @@ struct StatsView: View {
                 StatCard(
                     title: "Today",
                     value: viewModel.todayFocusTime(sessions).formattedHoursMinutes,
-                    icon: "sun.max.fill"
+                    icon: "sun.max.fill",
+                    tint: .appOrange
                 )
                 StatCard(
                     title: "This Week",
                     value: viewModel.weekFocusTime(sessions).formattedHoursMinutes,
-                    icon: "calendar"
+                    icon: "calendar",
+                    tint: .blue
                 )
                 StatCard(
                     title: "Streak",
                     value: "\(viewModel.currentStreak(sessions)) days",
-                    icon: "flame.fill"
+                    icon: "flame.fill",
+                    tint: .pink
                 )
                 StatCard(
                     title: "Sessions",
                     value: "\(viewModel.totalCompletedSessions(sessions))",
-                    icon: "checkmark.circle.fill"
+                    icon: "checkmark.circle.fill",
+                    tint: .breakGreen
                 )
             }
+            .padding(.horizontal, 16)
         }
     }
 
     private var chartSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Picker("Period", selection: $viewModel.selectedPeriod) {
                 ForEach(StatsViewModel.ChartPeriod.allCases, id: \.self) { period in
                     Text(period.rawValue).tag(period)
@@ -109,41 +116,63 @@ struct StatsView: View {
                     y: .value("Hours", point.hours)
                 )
                 .foregroundStyle(Color.appOrange.gradient)
-                .cornerRadius(4)
+                .cornerRadius(7)
             }
-            .frame(height: 200)
-            .animation(.spring, value: viewModel.selectedPeriod)
+            .chartYAxis {
+                AxisMarks(position: .leading)
+            }
+            .frame(height: 220)
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.selectedPeriod)
         }
-        .padding()
-        .background(Color.appSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(18)
+        .appCardStyle()
     }
 
     private var timelineSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             Text("History")
-                .font(.headline)
+                .font(.title3.bold())
 
             if !store.isProUser {
-                Text("Showing last 7 days. Upgrade to Pro for full history.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.fill")
+                        .font(.caption2)
+                    Text("Showing last 7 days. Upgrade to Pro for full history.")
+                        .font(.caption)
+                }
+                .foregroundStyle(.secondary)
             }
 
             if timelineGroups.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.largeTitle)
-                        .foregroundStyle(Color.appSecondary)
-                    Text("No sessions yet")
-                        .font(.headline)
-                    Text("Complete a focus session and it will appear here.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                VStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.appOrange.opacity(0.12))
+                            .frame(width: 80, height: 80)
+                            .blur(radius: 12)
+                        
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 36))
+                            .foregroundStyle(Color.appOrange)
+                            .symbolEffect(.pulse, options: .repeating)
+                    }
+                    
+                    VStack(spacing: 8) {
+                        Text("No sessions yet")
+                            .font(.headline)
+                        Text("Complete a focus session and it will appear here.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(2)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 32)
+                .padding(.horizontal, 24)
+                .appCardStyle()
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("No focus sessions recorded yet")
             } else {
                 TimelineView(
                     groups: timelineGroups,
@@ -163,21 +192,36 @@ private struct StatCard: View {
     let title: String
     let value: String
     let icon: String
+    let tint: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon)
-                .foregroundStyle(Color.appOrange)
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(tint.opacity(0.14))
+                    .frame(width: 36, height: 36)
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(tint)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+                    .tracking(0.3)
+                Text(value)
+                    .font(.title3.bold())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
         }
-        .frame(width: 120, alignment: .leading)
-        .padding()
-        .background(Color.appSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(width: 130, alignment: .leading)
+        .padding(16)
+        .appCardStyle(radius: 18)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
     }
 }
 
@@ -214,6 +258,7 @@ private struct ManualSessionSheet: View {
                         onSave(startDate, TimeInterval(durationMinutes * 60), selectedTag, note.isEmpty ? nil : note)
                         dismiss()
                     }
+                    .fontWeight(.semibold)
                 }
             }
         }

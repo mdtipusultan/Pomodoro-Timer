@@ -36,6 +36,7 @@ struct ChickFocusApp: App {
             .environment(appState)
             .environment(settingsViewModel)
             .environmentObject(appBlockingService)
+            .tint(.appOrange)
             .preferredColorScheme(settingsViewModel.colorScheme)
             .onAppear {
                 PersistenceService.seedDefaultTagsIfNeeded(context: sharedModelContainer.mainContext)

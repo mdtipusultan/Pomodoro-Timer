@@ -12,39 +12,45 @@ struct TimerSettingsView: View {
         List {
             Section("Durations") {
                 Stepper(value: focusMinutesBinding, in: 5...120, step: 5) {
-                    Text("Focus: \(Int(timer.focusDuration / 60)) min")
+                    Label("Focus: \(Int(timer.focusDuration / 60)) min", systemImage: "target")
                 }
 
                 Stepper(value: shortBreakMinutesBinding, in: 1...30, step: 1) {
-                    Text("Short Break: \(Int(timer.shortBreakDuration / 60)) min")
+                    Label("Short Break: \(Int(timer.shortBreakDuration / 60)) min", systemImage: "cup.and.saucer")
                 }
 
                 if store.isProUser {
                     Stepper(value: longBreakMinutesBinding, in: 5...60, step: 5) {
-                        Text("Long Break: \(Int(timer.longBreakDuration / 60)) min")
+                        Label("Long Break: \(Int(timer.longBreakDuration / 60)) min", systemImage: "leaf")
                     }
                 } else {
-                    HStack {
-                        Text("Long Break")
-                        Spacer()
-                        Text("\(Int(timer.longBreakDuration / 60)) min")
-                            .foregroundStyle(.secondary)
-                        Image(systemName: "lock.fill")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    Button {
+                        showPaywall = true
+                    } label: {
+                        HStack {
+                            Label("Long Break", systemImage: "leaf")
+                            Spacer()
+                            Text("\(Int(timer.longBreakDuration / 60)) min")
+                                .foregroundStyle(.secondary)
+                            Image(systemName: "lock.fill")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                    .onTapGesture { showPaywall = true }
+                    .foregroundStyle(.primary)
                 }
 
                 Stepper(value: $timer.cyclesBeforeLongBreak, in: 1...8) {
-                    Text("Cycles before long break: \(timer.cyclesBeforeLongBreak)")
+                    Label("Cycles before long break: \(timer.cyclesBeforeLongBreak)", systemImage: "repeat")
                 }
             }
 
             Section {
-                Toggle("Auto-start breaks", isOn: $timer.autoStartBreaks)
+                Toggle(isOn: $timer.autoStartBreaks) {
+                    Label("Auto-start breaks", systemImage: "play.circle")
+                }
 
-                Toggle("Night Owl mode", isOn: Binding(
+                Toggle(isOn: Binding(
                     get: { settings.nightOwlMode },
                     set: { newValue in
                         if store.isProUser || !newValue {
@@ -54,11 +60,15 @@ struct TimerSettingsView: View {
                             showPaywall = true
                         }
                     }
-                ))
+                )) {
+                    Label("Night Owl mode", systemImage: "moon.stars")
+                }
             }
         }
+        .appThemedList()
+        .tint(.appOrange)
         .navigationTitle("Timer Settings")
-        .sheet(isPresented: $showPaywall) {
+        .fullScreenCover(isPresented: $showPaywall) {
             PaywallView()
         }
     }

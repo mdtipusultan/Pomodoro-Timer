@@ -81,8 +81,12 @@ struct FloatingTimerContent: View {
                 .font(.caption.bold().monospacedDigit())
         }
         .padding(12)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .shadow(radius: 8)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.appOrange.opacity(0.25), lineWidth: 1)
+        )
+        .shadow(color: Color.appShadow, radius: 8, y: 3)
         .offset(dragOffset)
         .gesture(
             DragGesture()

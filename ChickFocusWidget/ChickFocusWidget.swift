@@ -40,6 +40,8 @@ struct ChickFocusWidgetProvider: TimelineProvider {
     }
 }
 
+private let brandOrange = Color(red: 1.0, green: 0.55, blue: 0.18)
+
 struct ChickFocusSmallWidget: View {
     let entry: ChickFocusWidgetEntry
 
@@ -47,13 +49,14 @@ struct ChickFocusSmallWidget: View {
         VStack(spacing: 8) {
             Image(systemName: "cat.fill")
                 .font(.title)
-                .foregroundStyle(.orange)
+                .foregroundStyle(brandOrange)
             Text("\(entry.todayFocusMinutes)m")
                 .font(.title2.bold())
             Text("Today")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .containerBackground(.fill.tertiary, for: .widget)
     }
 }
@@ -63,28 +66,29 @@ struct ChickFocusMediumWidget: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("This Week")
                     .font(.headline)
-                HStack(alignment: .bottom, spacing: 4) {
+                HStack(alignment: .bottom, spacing: 5) {
                     ForEach(Array(entry.weekHours.enumerated()), id: \.offset) { _, hours in
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.orange)
-                            .frame(width: 12, height: max(4, hours * 30))
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(brandOrange.gradient)
+                            .frame(width: 12, height: max(6, hours * 30))
                     }
                 }
             }
             Spacer()
-            VStack {
+            VStack(spacing: 4) {
                 Image(systemName: "flame.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(brandOrange)
                 Text("\(entry.streak)")
                     .font(.title.bold())
                 Text("streak")
                     .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
-        .padding()
+        .padding(4)
         .containerBackground(.fill.tertiary, for: .widget)
     }
 }
@@ -93,21 +97,42 @@ struct ChickFocusLargeWidget: View {
     let entry: ChickFocusWidgetEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Today's Sessions")
-                .font(.headline)
-            ForEach(entry.todaySessions) { session in
-                HStack {
-                    Text(session.tagName)
-                    Spacer()
-                    Text(session.duration.formattedHoursMinutes)
-                        .foregroundStyle(.secondary)
-                }
-                .font(.subheadline)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "cat.fill")
+                    .foregroundStyle(brandOrange)
+                Text("Today's Sessions")
+                    .font(.headline)
+                Spacer()
+                Text("\(entry.todayFocusMinutes)m")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(brandOrange)
             }
-            Spacer()
+
+            if entry.todaySessions.isEmpty {
+                Spacer()
+                Text("No sessions yet")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                Spacer()
+            } else {
+                ForEach(entry.todaySessions) { session in
+                    HStack {
+                        Circle()
+                            .fill(brandOrange)
+                            .frame(width: 7, height: 7)
+                        Text(session.tagName)
+                        Spacer()
+                        Text(session.duration.formattedHoursMinutes)
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.subheadline)
+                }
+                Spacer()
+            }
         }
-        .padding()
+        .padding(4)
         .containerBackground(.fill.tertiary, for: .widget)
     }
 }

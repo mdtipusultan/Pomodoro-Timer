@@ -8,20 +8,24 @@ struct TimerRingView: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(color.opacity(0.15), lineWidth: lineWidth)
+                .stroke(color.opacity(0.14), lineWidth: lineWidth)
 
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(
-                    color,
+                    AngularGradient(
+                        colors: [color.opacity(0.7), color, color.opacity(0.85)],
+                        center: .center
+                    ),
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
+                .shadow(color: color.opacity(0.35), radius: 6, y: 0)
                 .animation(.linear(duration: 1), value: progress)
 
             Circle()
-                .stroke(Color.black.opacity(0.05), lineWidth: 2)
-                .padding(lineWidth / 2 + 4)
+                .stroke(Color.appFill, lineWidth: 2)
+                .padding(lineWidth / 2 + 6)
         }
     }
 }

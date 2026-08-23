@@ -15,12 +15,8 @@ struct SplashView: View {
             }
         } else {
             ZStack {
-                LinearGradient(
-                    colors: [Color(red: 1.0, green: 0.58, blue: 0.0), Color(red: 1.0, green: 0.72, blue: 0.30)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                Color.appOrangeGradient
+                    .ignoresSafeArea()
 
                 VStack(spacing: 16) {
                     Image(systemName: "cat.fill")
@@ -43,14 +39,14 @@ struct SplashView: View {
                 }
             }
             .onAppear {
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                     showCat = true
                 }
-                withAnimation(.easeOut(duration: 0.5).delay(0.3)) {
+                withAnimation(.easeOut(duration: 0.4).delay(0.2)) {
                     showTitle = true
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    withAnimation {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation(.easeOut(duration: 0.3)) {
                         isActive = true
                     }
                 }

@@ -5,7 +5,7 @@ struct TimelineView: View {
     let use24Hour: Bool
     let isPro: Bool
     let onDelete: (FocusSession) -> Void
-  let onShowPaywall: () -> Void
+    let onShowPaywall: () -> Void
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 16, pinnedViews: [.sectionHeaders]) {
@@ -18,7 +18,7 @@ struct TimelineView: View {
                             note: .constant(session.note ?? ""),
                             onNoteCommit: {}
                         )
-                        .swipeActions(edge: .trailing) {
+                        .contextMenu {
                             Button(role: .destructive) {
                                 if isPro {
                                     onDelete(session)
@@ -32,8 +32,11 @@ struct TimelineView: View {
                     }
                 } header: {
                     Text(group.date.formattedShortDate())
-                        .font(.headline)
-                        .foregroundStyle(.primary)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 4)
+                        .background(Color.appBackground)
                 }
             }
         }

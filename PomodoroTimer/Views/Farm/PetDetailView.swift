@@ -16,59 +16,91 @@ struct PetDetailView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                Image(systemName: pet.type.systemImage)
-                    .font(.system(size: 80))
-                    .foregroundStyle(pet.type.color)
-                    .padding(.top, 32)
+            ScrollView {
+                VStack(spacing: 24) {
+                    VStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(pet.type.color.opacity(0.16))
+                                .frame(width: 128, height: 128)
+                            Image(systemName: pet.type.systemImage)
+                                .font(.system(size: 64))
+                                .foregroundStyle(pet.type.color)
+                        }
 
-                TextField("Name your companion", text: $petName)
-                    .textFieldStyle(.roundedBorder)
-                    .padding(.horizontal, 32)
-                    .onSubmit {
-                        petViewModel.updatePetName(pet, name: petName, context: modelContext)
+                        Text(pet.type.displayName)
+                            .font(.title2.bold())
                     }
+                    .padding(.top, 12)
 
-                VStack(spacing: 12) {
-                    detailRow("Raised", pet.raisedDate.formattedShortDate())
-                    detailRow("Likability", "\(pet.likability)%")
-                    if let session {
-                        detailRow("Duration", session.actualDuration.formattedHoursMinutes)
-                        if let tag = session.tag {
-                            HStack {
-                                Text("Tag")
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                HStack(spacing: 6) {
-                                    Circle().fill(Color(hex: tag.colorHex)).frame(width: 8, height: 8)
-                                    Text(tag.name)
+                    TextField("Name your companion", text: $petName)
+                        .textFieldStyle(.plain)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .appCardStyle(radius: 14)
+                        .padding(.horizontal, 24)
+                        .onSubmit {
+                            petViewModel.updatePetName(pet, name: petName, context: modelContext)
+                        }
+
+                    VStack(spacing: 0) {
+                        detailRow("Raised", pet.raisedDate.formattedShortDate())
+                        Divider().padding(.leading, 4)
+                        detailRow("Likability", "\(pet.likability)%")
+                        if let session {
+                            Divider().padding(.leading, 4)
+                            detailRow("Duration", session.actualDuration.formattedHoursMinutes)
+                            if let tag = session.tag {
+                                Divider().padding(.leading, 4)
+                                HStack {
+                                    Text("Tag")
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    HStack(spacing: 6) {
+                                        Circle()
+                                            .fill(Color(hex: tag.colorHex))
+                                            .frame(width: 8, height: 8)
+                                        Text(tag.name)
+                                    }
                                 }
+                                .padding(.vertical, 10)
                             }
                         }
                     }
-                }
-                .padding(.horizontal, 32)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .appCardStyle(radius: 16)
+                    .padding(.horizontal, 24)
 
-                Spacer()
+                    Spacer(minLength: 16)
+                }
             }
-            .navigationTitle(pet.type.displayName)
+            .appScreenBackground()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        petViewModel.updatePetName(pet, name: petName, context: modelContext)
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
                 }
             }
             .onAppear {
                 petName = pet.name ?? ""
             }
         }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 
     private func detailRow(_ label: String, _ value: String) -> some View {
         HStack {
             Text(label).foregroundStyle(.secondary)
             Spacer()
-            Text(value)
+            Text(value).fontWeight(.medium)
         }
+        .padding(.vertical, 10)
     }
 }

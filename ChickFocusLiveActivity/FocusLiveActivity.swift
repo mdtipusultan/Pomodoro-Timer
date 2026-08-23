@@ -8,8 +8,8 @@ struct FocusLiveActivityWidget: Widget {
             HStack(spacing: 16) {
                 Image(systemName: PetType(rawValue: context.attributes.petType)?.systemImage ?? "cat.fill")
                     .font(.title2)
-                    .foregroundStyle(.orange)
-                VStack(alignment: .leading) {
+                    .foregroundStyle(Color(red: 1.0, green: 0.55, blue: 0.18))
+                VStack(alignment: .leading, spacing: 2) {
                     Text(context.state.sessionType)
                         .font(.headline)
                     if let tag = context.state.tagName {
@@ -21,14 +21,15 @@ struct FocusLiveActivityWidget: Widget {
                 Spacer()
                 Text(context.state.timeRemaining.formattedTimer)
                     .font(.title2.bold().monospacedDigit())
+                    .monospacedDigit()
             }
             .padding()
-            .activityBackgroundTint(Color.orange.opacity(0.15))
+            .activityBackgroundTint(Color(red: 1.0, green: 0.55, blue: 0.18).opacity(0.16))
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     Image(systemName: PetType(rawValue: context.attributes.petType)?.systemImage ?? "cat.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color(red: 1.0, green: 0.55, blue: 0.18))
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     Text(context.state.timeRemaining.formattedTimer)
@@ -36,18 +37,18 @@ struct FocusLiveActivityWidget: Widget {
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     ProgressView(value: context.state.progress)
-                        .tint(.orange)
+                        .tint(Color(red: 1.0, green: 0.55, blue: 0.18))
                 }
             } compactLeading: {
                 Image(systemName: "cat.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color(red: 1.0, green: 0.55, blue: 0.18))
             } compactTrailing: {
                 Text(context.state.timeRemaining.formattedTimer)
                     .monospacedDigit()
                     .font(.caption2)
             } minimal: {
                 Image(systemName: "cat.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color(red: 1.0, green: 0.55, blue: 0.18))
             }
         }
     }

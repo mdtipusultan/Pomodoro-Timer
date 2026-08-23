@@ -6,29 +6,57 @@ struct OnboardingPageView: View {
     let title: String
     let subtitle: String
     let animateIcon: Bool
+    
+    @State private var appear = false
 
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
 
-            Image(systemName: icon)
-                .font(.system(size: 120))
-                .foregroundStyle(iconColor)
-                .symbolEffect(.bounce, value: animateIcon)
+            ZStack {
+                Circle()
+                    .fill(iconColor.opacity(0.14))
+                    .frame(width: 180, height: 180)
+                    .blur(radius: 20)
+                    .scaleEffect(appear ? 1 : 0.8)
+                
+                Circle()
+                    .fill(iconColor.opacity(0.12))
+                    .frame(width: 180, height: 180)
+                    .scaleEffect(appear ? 1 : 0.8)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 76))
+                    .foregroundStyle(iconColor)
+                    .symbolEffect(.bounce, value: animateIcon)
+                    .scaleEffect(appear ? 1 : 0.5)
+            }
 
-            VStack(spacing: 12) {
+            VStack(spacing: 14) {
                 Text(title)
                     .font(.title.bold())
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 28)
+                    .opacity(appear ? 1 : 0)
+                    .offset(y: appear ? 0 : 20)
+                
                 Text(subtitle)
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 40)
+                    .opacity(appear ? 1 : 0)
+                    .offset(y: appear ? 0 : 20)
             }
 
             Spacer()
             Spacer()
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                appear = true
+            }
         }
     }
 }

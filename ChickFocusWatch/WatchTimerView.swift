@@ -5,11 +5,24 @@ struct WatchTimerView: View {
     @State private var isRunning = false
     @State private var petType: PetType = .cat
 
+    private var progress: Double {
+        max(0, min(1, 1 - (timeRemaining / (25 * 60))) )
+    }
+
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: petType.systemImage)
-                .font(.largeTitle)
-                .foregroundStyle(.orange)
+        VStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .stroke(Color.orange.opacity(0.2), lineWidth: 6)
+                Circle()
+                    .trim(from: 0, to: isRunning ? max(progress, 0.02) : 1)
+                    .stroke(Color.orange, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Image(systemName: petType.systemImage)
+                    .font(.title2)
+                    .foregroundStyle(.orange)
+            }
+            .frame(width: 72, height: 72)
 
             Text(timeRemaining.formattedTimer)
                 .font(.system(.title2, design: .rounded).monospacedDigit())
@@ -17,6 +30,7 @@ struct WatchTimerView: View {
             Button(isRunning ? "Stop" : "Start") {
                 isRunning.toggle()
             }
+            .tint(.orange)
         }
         .onReceive(NotificationCenter.default.publisher(for: .init("watchTimerUpdate"))) { notification in
             if let time = notification.userInfo?["timeRemaining"] as? TimeInterval {

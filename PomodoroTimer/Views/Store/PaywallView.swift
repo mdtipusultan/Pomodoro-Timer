@@ -8,84 +8,135 @@ struct PaywallView: View {
     @State private var errorMessage: String?
 
     private let benefits = [
-        "Unlimited stats history",
-        "Edit & delete sessions",
-        "Double likability",
-        "All future animals",
-        "Dark mode",
-        "All app icons"
+        ("chart.bar.fill", "Unlimited stats history"),
+        ("pencil.and.list.clipboard", "Edit & delete sessions"),
+        ("heart.fill", "Double likability"),
+        ("hare.fill", "All future animals"),
+        ("moon.fill", "Dark mode"),
+        ("app.gift.fill", "All app icons")
     ]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    header
-                    benefitsList
-                    productsList
-                    restoreButton
-                }
-                .padding()
-            }
-            .background(Color.appBackground)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+        ZStack(alignment: .top) {
+            Color.appBackground.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Close button
+                HStack {
+                    Spacer()
                     Button {
+                        HapticManager.shared.buttonTap()
                         dismiss()
                     } label: {
                         Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityLabel("Close paywall")
+                    .padding(.trailing, 20)
+                    .padding(.top, 16)
                 }
-            }
-            .alert("Error", isPresented: .constant(errorMessage != nil)) {
-                Button("OK") { errorMessage = nil }
-            } message: {
-                Text(errorMessage ?? "")
-            }
-            .task {
-                if store.products.isEmpty {
-                    await store.loadProducts()
+                
+                // Content
+                VStack(spacing: 20) {
+                    Spacer(minLength: 0)
+                    
+                    header
+                    
+                    benefitsGrid
+                    
+                    Spacer(minLength: 10)
+                    
+                    productsList
+                    
+                    restoreButton
+                        .padding(.bottom, 8)
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
+        }
+        .alert("Error", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+        .task {
+            if store.products.isEmpty {
+                await store.loadProducts()
             }
         }
     }
 
     private var header: some View {
         VStack(spacing: 12) {
-            LinearGradient(
-                colors: [.appOrange, .orange.opacity(0.7)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .frame(height: 120)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay {
-                Text("Go Pro")
-                    .font(.largeTitle.bold())
-                    .foregroundStyle(.white)
+            ZStack {
+                Circle()
+                    .fill(Color.appOrange.opacity(0.14))
+                    .frame(width: 80, height: 80)
+                    .blur(radius: 10)
+                
+                Circle()
+                    .fill(Color.appOrange.opacity(0.14))
+                    .frame(width: 80, height: 80)
+                
+                Image(systemName: "cat.fill")
+                    .font(.system(size: 36))
+                    .foregroundStyle(Color.appOrange)
+                    .symbolEffect(.pulse, options: .repeating)
+            }
+
+            VStack(spacing: 6) {
+                Text("Unlock ChickFocus Pro")
+                    .font(.title2.bold())
+                    .multilineTextAlignment(.center)
+
+                Text("More companions, full history, and dark mode")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 
-    private var benefitsList: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ForEach(benefits, id: \.self) { benefit in
-                HStack(spacing: 12) {
-                    Image(systemName: "checkmark.circle.fill")
+    private var benefitsGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+            ForEach(benefits, id: \.1) { icon, benefit in
+                VStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .font(.title3)
                         .foregroundStyle(Color.appOrange)
+                        .frame(width: 36, height: 36)
+                        .background(Color.appOrange.opacity(0.14), in: Circle())
+                    
                     Text(benefit)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 8)
+                .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var productsList: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             if store.isLoading {
-                ProgressView()
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .tint(.appOrange)
+                    Text("Loading products...")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
             } else if store.subscriptionProducts.isEmpty {
                 mockProductButtons
             } else {
@@ -101,7 +152,7 @@ struct PaywallView: View {
     }
 
     private var mockProductButtons: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             mockButton("Monthly — $3.99/mo", best: false)
             mockButton("Yearly — $9.99/yr", best: true)
             mockButton("Lifetime — $24.99", best: false)
@@ -115,52 +166,88 @@ struct PaywallView: View {
             dismiss()
             #endif
         } label: {
-            HStack {
-                Text(title).font(.headline)
-                Spacer()
-                if best {
-                    Text("Best Value")
-                        .font(.caption2.bold())
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.appOrange)
-                        .foregroundStyle(.white)
-                        .clipShape(Capsule())
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(title.components(separatedBy: " — ").first ?? title)
+                            .font(.subheadline.weight(.semibold))
+                        if best {
+                            Text("Best")
+                                .font(.caption2.bold())
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.appOrange, in: Capsule())
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    if let price = title.components(separatedBy: " — ").last {
+                        Text(price)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                Spacer()
+                Text(title.components(separatedBy: " — ").last ?? "")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(best ? Color.appOrange : .primary)
             }
-            .padding()
-            .background(Color.appSurface)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(best ? Color.appOrange : Color.clear, lineWidth: 2)
             )
+            .shadow(color: Color.appShadow.opacity(best ? 0.12 : 0.06), radius: best ? 8 : 6, x: 0, y: 3)
         }
         .buttonStyle(.plain)
     }
 
     private var restoreButton: some View {
-        Button("Restore Purchases") {
-            Task {
-                do {
-                    try await store.restorePurchases()
-                    if store.isProUser { dismiss() }
-                } catch {
-                    errorMessage = error.localizedDescription
+        VStack(spacing: 8) {
+            Button("Restore Purchases") {
+                HapticManager.shared.buttonTap()
+                Task {
+                    do {
+                        try await store.restorePurchases()
+                        if store.isProUser { 
+                            HapticManager.shared.sessionComplete()
+                            dismiss() 
+                        }
+                    } catch {
+                        HapticManager.shared.sessionFailed()
+                        errorMessage = error.localizedDescription
+                    }
                 }
             }
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.secondary)
+            
+            HStack(spacing: 12) {
+                Link("Privacy", destination: URL(string: "https://example.com/privacy")!)
+                Text("•")
+                    .foregroundStyle(.quaternary)
+                Link("Terms", destination: URL(string: "https://example.com/terms")!)
+            }
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
         }
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
     }
 
     private func purchase(_ product: Product) {
+        HapticManager.shared.buttonTap()
         isPurchasing = true
         Task {
             do {
                 let success = try await store.purchase(product)
-                if success { dismiss() }
+                if success { 
+                    HapticManager.shared.sessionComplete()
+                    dismiss() 
+                } else {
+                    HapticManager.shared.buttonTap()
+                }
             } catch {
+                HapticManager.shared.sessionFailed()
                 errorMessage = error.localizedDescription
             }
             isPurchasing = false
