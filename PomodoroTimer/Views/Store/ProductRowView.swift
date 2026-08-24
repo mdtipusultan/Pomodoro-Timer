@@ -4,6 +4,7 @@ import SwiftUI
 struct ProductRowView: View {
     let product: Product
     let isBestValue: Bool
+    var isCurrent: Bool = false
     let onPurchase: () -> Void
     
     @State private var isPressed = false
@@ -15,7 +16,14 @@ struct ProductRowView: View {
                     HStack(spacing: 6) {
                         Text(product.displayName)
                             .font(.subheadline.weight(.semibold))
-                        if isBestValue {
+                        if isCurrent {
+                            Text("Current")
+                                .font(.caption2.bold())
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.appOrange, in: Capsule())
+                                .foregroundStyle(.white)
+                        } else if isBestValue {
                             Text("Best")
                                 .font(.caption2.bold())
                                 .padding(.horizontal, 6)
@@ -30,9 +38,9 @@ struct ProductRowView: View {
                         .lineLimit(1)
                 }
                 Spacer()
-                Text(product.displayPrice)
+                Text(isCurrent ? "Active" : product.displayPrice)
                     .font(.headline.weight(.bold))
-                    .foregroundStyle(isBestValue ? Color.appOrange : .primary)
+                    .foregroundStyle(isBestValue || isCurrent ? Color.appOrange : .primary)
             }
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
@@ -40,9 +48,9 @@ struct ProductRowView: View {
             .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(isBestValue ? Color.appOrange : Color.clear, lineWidth: 2)
+                    .stroke(isBestValue || isCurrent ? Color.appOrange : Color.clear, lineWidth: 2)
             )
-            .shadow(color: Color.appShadow.opacity(isBestValue ? 0.12 : 0.06), radius: isBestValue ? 8 : 6, x: 0, y: 3)
+            .shadow(color: Color.appShadow.opacity(isBestValue || isCurrent ? 0.12 : 0.06), radius: isBestValue || isCurrent ? 8 : 6, x: 0, y: 3)
             .scaleEffect(isPressed ? 0.97 : 1.0)
         }
         .buttonStyle(.plain)

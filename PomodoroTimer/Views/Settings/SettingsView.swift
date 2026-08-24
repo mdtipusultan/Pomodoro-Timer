@@ -128,6 +128,13 @@ struct SettingsView: View {
                                 .font(.caption)
                                 .foregroundStyle(Color.appOrange.opacity(0.6))
                         }
+
+                        Button {
+                            HapticManager.shared.buttonTap()
+                            showPaywall = true
+                        } label: {
+                            Label("Manage Subscription", systemImage: "creditcard")
+                        }
                     } else {
                         Button {
                             HapticManager.shared.buttonTap()

@@ -6,6 +6,7 @@ struct PaywallView: View {
     @Environment(StoreKitService.self) private var store
     @State private var isPurchasing = false
     @State private var errorMessage: String?
+    @State private var showManageSubscriptions = false
 
     private let benefits = [
         ("chart.bar.fill", "Unlimited stats history"),
@@ -61,6 +62,7 @@ struct PaywallView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        .manageSubscriptionsSheet(isPresented: $showManageSubscriptions)
         .task {
             if store.products.isEmpty {
                 await store.loadProducts()
@@ -87,11 +89,13 @@ struct PaywallView: View {
             }
 
             VStack(spacing: 6) {
-                Text("Unlock ChickFocus Pro")
+                Text(store.isProUser ? "ChickFocus Pro" : "Unlock ChickFocus Pro")
                     .font(.title2.bold())
                     .multilineTextAlignment(.center)
 
-                Text("More companions, full history, and dark mode")
+                Text(store.isProUser
+                     ? "You're a Pro member. Change plans anytime."
+                     : "More companions, full history, and dark mode")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -144,6 +148,7 @@ struct PaywallView: View {
                     ProductRowView(
                         product: product,
                         isBestValue: product.id.contains("yearly"),
+                        isCurrent: store.purchasedProductIDs.contains(product.id),
                         onPurchase: { purchase(product) }
                     )
                 }
@@ -205,14 +210,24 @@ struct PaywallView: View {
 
     private var restoreButton: some View {
         VStack(spacing: 8) {
+            if store.isProUser {
+                Button("Manage in App Store") {
+                    HapticManager.shared.buttonTap()
+                    showManageSubscriptions = true
+                }
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+            }
+
             Button("Restore Purchases") {
                 HapticManager.shared.buttonTap()
                 Task {
                     do {
+                        let wasPro = store.isProUser
                         try await store.restorePurchases()
-                        if store.isProUser { 
+                        if store.isProUser {
                             HapticManager.shared.sessionComplete()
-                            dismiss() 
+                            if !wasPro { dismiss() }
                         }
                     } catch {
                         HapticManager.shared.sessionFailed()
@@ -236,6 +251,10 @@ struct PaywallView: View {
 
     private func purchase(_ product: Product) {
         HapticManager.shared.buttonTap()
+        if store.purchasedProductIDs.contains(product.id) {
+            showManageSubscriptions = true
+            return
+        }
         isPurchasing = true
         Task {
             do {
