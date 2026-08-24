@@ -4,6 +4,7 @@ import SwiftUI
 struct TagSelectorView: View {
     @Binding var selectedTag: Tag?
     let tags: [Tag]
+    var onManage: (() -> Void)? = nil
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -45,6 +46,18 @@ struct TagSelectorView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Tag: \(tag.name)")
                     .accessibilityAddTraits(selectedTag?.id == tag.id ? [.isSelected] : [])
+                }
+
+                if let onManage {
+                    Button(action: onManage) {
+                        Image(systemName: "plus")
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Color.appSurface, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Manage tags")
                 }
             }
             .padding(.horizontal, 20)

@@ -6,18 +6,24 @@ struct TimelineView: View {
     let isPro: Bool
     let onDelete: (FocusSession) -> Void
     let onShowPaywall: () -> Void
+    var onEdit: ((FocusSession) -> Void)? = nil
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 16, pinnedViews: [.sectionHeaders]) {
             ForEach(groups) { group in
                 Section {
                     ForEach(group.sessions, id: \.id) { session in
-                        SessionRowView(
-                            session: session,
-                            use24Hour: use24Hour,
-                            note: .constant(session.note ?? ""),
-                            onNoteCommit: {}
-                        )
+                        Button {
+                            onEdit?(session)
+                        } label: {
+                            SessionRowView(
+                                session: session,
+                                use24Hour: use24Hour,
+                                note: .constant(session.note ?? ""),
+                                onNoteCommit: {}
+                            )
+                        }
+                        .buttonStyle(.plain)
                         .contextMenu {
                             Button(role: .destructive) {
                                 if isPro {

@@ -18,7 +18,8 @@ struct PaywallView: View {
     ]
 
     var body: some View {
-        ZStack(alignment: .top) {
+        NavigationStack {
+            ZStack(alignment: .top) {
             Color.appBackground.ignoresSafeArea()
             
             VStack(spacing: 0) {
@@ -67,6 +68,7 @@ struct PaywallView: View {
             if store.products.isEmpty {
                 await store.loadProducts()
             }
+        }
         }
     }
 
@@ -142,7 +144,23 @@ struct PaywallView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
             } else if store.subscriptionProducts.isEmpty {
-                mockProductButtons
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.title2)
+                        .foregroundStyle(Color.appOrange)
+                    Text(store.errorMessage ?? "Couldn't load products. Check your connection and try again.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("Retry") {
+                        Task { await store.loadProducts() }
+                    }
+                    .buttonStyle(AppSecondaryButtonStyle())
+                    #if DEBUG
+                    mockProductButtons
+                    #endif
+                }
+                .padding(.vertical, 12)
             } else {
                 ForEach(store.subscriptionProducts, id: \.id) { product in
                     ProductRowView(
@@ -239,10 +257,14 @@ struct PaywallView: View {
             .foregroundStyle(.secondary)
             
             HStack(spacing: 12) {
-                Link("Privacy", destination: URL(string: "https://example.com/privacy")!)
+                NavigationLink("Privacy") {
+                    LegalDocumentView(kind: .privacy)
+                }
                 Text("•")
                     .foregroundStyle(.quaternary)
-                Link("Terms", destination: URL(string: "https://example.com/terms")!)
+                NavigationLink("Terms") {
+                    LegalDocumentView(kind: .terms)
+                }
             }
             .font(.caption2)
             .foregroundStyle(.tertiary)

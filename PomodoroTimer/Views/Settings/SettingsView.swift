@@ -4,7 +4,8 @@ struct SettingsView: View {
     @Environment(StoreKitService.self) private var store
     @Environment(SoundService.self) private var soundService
     @Environment(SettingsViewModel.self) private var settings
-    @EnvironmentObject private var blockingService: AppBlockingService
+    // FAMILY_CONTROLS_DISABLED
+    // @EnvironmentObject private var blockingService: AppBlockingService
     @State private var showPaywall = false
 
     var body: some View {
@@ -69,17 +70,18 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Focus Mode") {
-                    Toggle(isOn: $blockingService.strictModeEnabled) {
-                        Label("Strict mode", systemImage: "lock.shield")
-                    }
-
-                    NavigationLink {
-                        AppBlockingView()
-                    } label: {
-                        Label("Manage app whitelist", systemImage: "apps.iphone")
-                    }
-                }
+                // FAMILY_CONTROLS_DISABLED — uncomment section below to re-enable Strict mode.
+                // Section("Focus Mode") {
+                //     Toggle(isOn: $blockingService.strictModeEnabled) {
+                //         Label("Strict mode", systemImage: "lock.shield")
+                //     }
+                //
+                //     NavigationLink {
+                //         AppBlockingView()
+                //     } label: {
+                //         Label("Blocked apps", systemImage: "apps.iphone")
+                //     }
+                // }
 
                 Section("Sound & Haptics") {
                     Toggle(isOn: Binding(
@@ -157,6 +159,19 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Reminders") {
+                    Toggle(isOn: dailyReminderBinding) {
+                        Label("Daily reminder", systemImage: "alarm")
+                    }
+                    if settings.dailyReminderEnabled {
+                        DatePicker(
+                            "Time",
+                            selection: reminderTimeBinding,
+                            displayedComponents: .hourAndMinute
+                        )
+                    }
+                }
+
                 Section("About") {
                     LabeledContent {
                         Text(settings.appVersion)
@@ -164,10 +179,14 @@ struct SettingsView: View {
                     } label: {
                         Label("Version", systemImage: "info.circle")
                     }
-                    Link(destination: URL(string: "https://example.com/privacy")!) {
+                    NavigationLink {
+                        LegalDocumentView(kind: .privacy)
+                    } label: {
                         Label("Privacy Policy", systemImage: "hand.raised")
                     }
-                    Link(destination: URL(string: "https://example.com/terms")!) {
+                    NavigationLink {
+                        LegalDocumentView(kind: .terms)
+                    } label: {
                         Label("Terms of Use", systemImage: "doc.text")
                     }
                 }
@@ -210,6 +229,32 @@ struct SettingsView: View {
             }
         )
     }
+
+    private var dailyReminderBinding: Binding<Bool> {
+        Binding(
+            get: { settings.dailyReminderEnabled },
+            set: { newValue in
+                settings.dailyReminderEnabled = newValue
+                settings.applyDailyReminder()
+            }
+        )
+    }
+
+    private var reminderTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                Calendar.current.date(
+                    from: DateComponents(hour: settings.dailyReminderHour, minute: settings.dailyReminderMinute)
+                ) ?? Date()
+            },
+            set: { date in
+                let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+                settings.dailyReminderHour = components.hour ?? 9
+                settings.dailyReminderMinute = components.minute ?? 0
+                settings.applyDailyReminder()
+            }
+        )
+    }
 }
 
 #Preview {
@@ -217,5 +262,6 @@ struct SettingsView: View {
         .environment(StoreKitService())
         .environment(SoundService())
         .environment(SettingsViewModel())
-        .environmentObject(AppBlockingService())
+        // FAMILY_CONTROLS_DISABLED
+        // .environmentObject(AppBlockingService())
 }

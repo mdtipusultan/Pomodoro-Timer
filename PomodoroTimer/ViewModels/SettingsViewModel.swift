@@ -22,6 +22,18 @@ final class SettingsViewModel {
         didSet { UserDefaults.standard.set(nightOwlMode, forKey: TimerService.Keys.nightOwlMode) }
     }
 
+    var dailyReminderEnabled: Bool = false {
+        didSet { UserDefaults.standard.set(dailyReminderEnabled, forKey: AppGroup.Keys.dailyReminderEnabled) }
+    }
+
+    var dailyReminderHour: Int = 9 {
+        didSet { UserDefaults.standard.set(dailyReminderHour, forKey: AppGroup.Keys.dailyReminderHour) }
+    }
+
+    var dailyReminderMinute: Int = 0 {
+        didSet { UserDefaults.standard.set(dailyReminderMinute, forKey: AppGroup.Keys.dailyReminderMinute) }
+    }
+
     var themeSelection: String = "system" {
         didSet { UserDefaults.standard.set(themeSelection, forKey: Keys.themeSelection) }
     }
@@ -48,12 +60,26 @@ final class SettingsViewModel {
         use24HourTime = UserDefaults.standard.bool(forKey: Keys.use24HourTime)
         hapticsEnabled = UserDefaults.standard.object(forKey: Keys.hapticsEnabled) as? Bool ?? true
         nightOwlMode = UserDefaults.standard.bool(forKey: TimerService.Keys.nightOwlMode)
+        dailyReminderEnabled = UserDefaults.standard.bool(forKey: AppGroup.Keys.dailyReminderEnabled)
+        dailyReminderHour = UserDefaults.standard.object(forKey: AppGroup.Keys.dailyReminderHour) as? Int ?? 9
+        dailyReminderMinute = UserDefaults.standard.object(forKey: AppGroup.Keys.dailyReminderMinute) as? Int ?? 0
         themeSelection = UserDefaults.standard.string(forKey: Keys.themeSelection) ?? "system"
         selectedAppIcon = UserDefaults.standard.string(forKey: Keys.selectedAppIcon) ?? "default"
     }
 
     func applySavedAppIcon() {
         AppIconService.apply(selection: selectedAppIcon)
+    }
+
+    func applyDailyReminder() {
+        if dailyReminderEnabled {
+            Task {
+                _ = await NotificationService.shared.requestAuthorization()
+                NotificationService.shared.scheduleDailyReminder(at: dailyReminderHour, minute: dailyReminderMinute)
+            }
+        } else {
+            NotificationService.shared.cancelDailyReminder()
+        }
     }
 
     private enum Keys {

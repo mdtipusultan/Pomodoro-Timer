@@ -29,6 +29,17 @@ enum PetType: String, Codable, CaseIterable {
         rawValue.capitalized
     }
 
+    var imageName: String {
+        switch self {
+        case .cat: return "PetCat"
+        case .bird: return "PetBird"
+        case .hare: return "PetHare"
+        case .fish: return "PetFish"
+        case .ladybug: return "PetLadybug"
+        case .tortoise: return "PetTortoise"
+        }
+    }
+
     var isLocked: Bool {
         self != .cat
     }

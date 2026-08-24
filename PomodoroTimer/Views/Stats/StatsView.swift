@@ -12,6 +12,7 @@ struct StatsView: View {
     @State private var viewModel = StatsViewModel()
     @State private var showPaywall = false
     @State private var showManualAdd = false
+    @State private var sessionToEdit: FocusSession?
 
     private var timelineGroups: [StatsViewModel.DayGroup] {
         viewModel.groupedSessions(sessions, isPro: store.isProUser)
@@ -56,6 +57,17 @@ struct StatsView: View {
                         note: note,
                         context: modelContext
                     )
+                }
+            }
+            .sheet(item: $sessionToEdit) { session in
+                SessionEditorView(session: session, isPro: store.isProUser) { note, duration in
+                    if store.isProUser {
+                        viewModel.updateSession(session, note: note, duration: duration, context: modelContext)
+                    } else {
+                        showPaywall = true
+                    }
+                } onPaywall: {
+                    showPaywall = true
                 }
             }
             .onAppear { syncSettings() }
@@ -181,7 +193,14 @@ struct StatsView: View {
                     onDelete: { session in
                         viewModel.deleteSession(session, context: modelContext)
                     },
-                    onShowPaywall: { showPaywall = true }
+                    onShowPaywall: { showPaywall = true },
+                    onEdit: { session in
+                        if store.isProUser {
+                            sessionToEdit = session
+                        } else {
+                            showPaywall = true
+                        }
+                    }
                 )
             }
         }

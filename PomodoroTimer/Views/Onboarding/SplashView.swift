@@ -19,9 +19,10 @@ struct SplashView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 16) {
-                    Image(systemName: "cat.fill")
-                        .font(.system(size: 80))
-                        .foregroundStyle(.white)
+                    Image("PetCat")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 72, height: 72)
                         .symbolEffect(.bounce, value: showCat)
                         .opacity(showCat ? 1 : 0)
                         .scaleEffect(showCat ? 1 : 0.5)

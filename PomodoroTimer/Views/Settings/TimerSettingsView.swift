@@ -45,6 +45,13 @@ struct TimerSettingsView: View {
                 }
             }
 
+            Section("Mode") {
+                Picker("Timer mode", selection: $timer.mode) {
+                    Text("Pomodoro").tag(TimerService.TimerMode.pomodoro)
+                    Text("Countdown").tag(TimerService.TimerMode.countdown)
+                }
+            }
+
             Section {
                 Toggle(isOn: $timer.autoStartBreaks) {
                     Label("Auto-start breaks", systemImage: "play.circle")

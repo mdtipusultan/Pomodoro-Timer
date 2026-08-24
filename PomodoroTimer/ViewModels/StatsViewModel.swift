@@ -48,7 +48,10 @@ final class StatsViewModel {
     func weekFocusTime(_ sessions: [FocusSession]) -> TimeInterval {
         let weekStart = Date.weekStart(for: Date(), startsOnMonday: weekStartsOnMonday)
         return sessions
-            .filter { $0.wasSuccessful && $0.startDate >= weekStart }
+            .filter {
+                $0.wasSuccessful &&
+                $0.startDate.adjustedForNightOwl(nightOwlMode: nightOwlMode) >= weekStart
+            }
             .reduce(0) { $0 + $1.actualDuration }
     }
 
@@ -103,6 +106,18 @@ final class StatsViewModel {
 
     func deleteSession(_ session: FocusSession, context: ModelContext) {
         context.delete(session)
+        try? context.save()
+    }
+
+    func updateSession(_ session: FocusSession, note: String?, duration: TimeInterval?, context: ModelContext) {
+        if let note {
+            session.note = note.isEmpty ? nil : note
+        }
+        if let duration {
+            session.duration = duration
+            session.actualDuration = duration
+            session.endDate = session.startDate.addingTimeInterval(duration)
+        }
         try? context.save()
     }
 

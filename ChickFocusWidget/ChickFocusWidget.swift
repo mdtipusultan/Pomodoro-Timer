@@ -1,6 +1,14 @@
 import WidgetKit
 import SwiftUI
 
+struct WidgetSnapshot: Codable, Equatable {
+    var todayMinutes: Int
+    var streak: Int
+    var weekHours: [Double]
+    var sessionTitles: [String]
+    var updatedAt: Date
+}
+
 struct ChickFocusWidgetEntry: TimelineEntry {
     let date: Date
     let todayFocusMinutes: Int
@@ -30,13 +38,30 @@ struct ChickFocusWidgetProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (ChickFocusWidgetEntry) -> Void) {
-        completion(placeholder(in: context))
+        completion(loadEntry())
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<ChickFocusWidgetEntry>) -> Void) {
-        let entry = placeholder(in: context)
+        let entry = loadEntry()
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date()
         completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+    }
+
+    private func loadEntry() -> ChickFocusWidgetEntry {
+        let defaults = UserDefaults(suiteName: "group.com.office.PomodoroTimer") ?? .standard
+        guard let data = defaults.data(forKey: "widgetSnapshot"),
+              let snapshot = try? JSONDecoder().decode(WidgetSnapshot.self, from: data) else {
+            return placeholder(in: .init())
+        }
+        return ChickFocusWidgetEntry(
+            date: Date(),
+            todayFocusMinutes: snapshot.todayMinutes,
+            streak: snapshot.streak,
+            weekHours: snapshot.weekHours,
+            todaySessions: snapshot.sessionTitles.enumerated().map { index, title in
+                WidgetSession(id: UUID(), tagName: title, duration: 0, time: Date())
+            }
+        )
     }
 }
 

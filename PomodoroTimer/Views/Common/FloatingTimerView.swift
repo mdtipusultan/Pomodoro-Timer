@@ -6,8 +6,10 @@ struct FloatingTimerView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: petType.systemImage)
-                .foregroundStyle(Color.appOrange)
+            Image(petType.imageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 22, height: 22)
             Text(timeRemaining.formattedTimer)
                 .font(.caption.bold().monospacedDigit())
         }

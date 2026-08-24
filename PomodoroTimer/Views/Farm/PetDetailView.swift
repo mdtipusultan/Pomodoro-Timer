@@ -23,9 +23,10 @@ struct PetDetailView: View {
                             Circle()
                                 .fill(pet.type.color.opacity(0.16))
                                 .frame(width: 128, height: 128)
-                            Image(systemName: pet.type.systemImage)
-                                .font(.system(size: 64))
-                                .foregroundStyle(pet.type.color)
+                            Image(pet.type.imageName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 120, height: 120)
                         }
 
                         Text(pet.type.displayName)

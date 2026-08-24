@@ -11,12 +11,14 @@ final class TimerViewModel {
     let notificationService: NotificationService
     let liveActivityService: LiveActivityService
     let appState: AppState
+    // FAMILY_CONTROLS_DISABLED
+    // var blockingService: AppBlockingService?
 
     var selectedTag: Tag?
     var showStopConfirmation = false
     var showSuccessAnimation = false
     var showFailedAnimation = false
-    var heartsToday: Int = 0
+    var heartsToday = 0
 
     private var observationTask: Task<Void, Never>?
     private var lastHandledPhaseCompletionCount = 0
@@ -27,12 +29,16 @@ final class TimerViewModel {
         notificationService: NotificationService,
         liveActivityService: LiveActivityService,
         appState: AppState
+        // FAMILY_CONTROLS_DISABLED
+        // blockingService: AppBlockingService? = nil
     ) {
         self.timerService = timerService
         self.soundService = soundService
         self.notificationService = notificationService
         self.liveActivityService = liveActivityService
         self.appState = appState
+        // FAMILY_CONTROLS_DISABLED
+        // self.blockingService = blockingService
         startObserving()
     }
 
@@ -45,9 +51,10 @@ final class TimerViewModel {
     }
 
     func startFocus(modelContext: ModelContext, store: StoreKitService) {
-        if store.strictModeCheck() {
-            // blocking handled in settings
-        }
+        // FAMILY_CONTROLS_DISABLED
+        // if blockingService?.strictModeEnabled == true {
+        //     blockingService?.startBlocking()
+        // }
         timerService.start()
         soundService.playSessionStart()
         HapticManager.shared.timerStart()
@@ -55,13 +62,39 @@ final class TimerViewModel {
             in: timerService.timeRemaining,
             isBreak: false
         )
-        updateLiveActivity()
+        liveActivityService.start(
+            petType: appState.selectedPetType,
+            tagName: selectedTag?.name,
+            timeRemaining: timerService.timeRemaining,
+            totalDuration: timerService.totalDuration,
+            sessionType: timerService.stateLabel
+        )
         appState.petAnimationState = .focusing
         WatchConnectivityService.shared.sendTimerUpdate(
             state: timerService.state.rawValue,
             timeRemaining: timerService.timeRemaining,
             petType: appState.selectedPetType.rawValue
         )
+    }
+
+    func startBreak() {
+        // FAMILY_CONTROLS_DISABLED
+        // blockingService?.stopBlocking()
+        timerService.startBreak()
+        soundService.playBreakStart()
+        HapticManager.shared.timerStart()
+        notificationService.scheduleSessionEnd(
+            in: timerService.timeRemaining,
+            isBreak: true
+        )
+        liveActivityService.start(
+            petType: appState.selectedPetType,
+            tagName: selectedTag?.name,
+            timeRemaining: timerService.timeRemaining,
+            totalDuration: timerService.totalDuration,
+            sessionType: timerService.stateLabel
+        )
+        appState.petAnimationState = .breakTime
     }
 
     func pause() {
@@ -72,6 +105,10 @@ final class TimerViewModel {
     }
 
     func resume() {
+        // FAMILY_CONTROLS_DISABLED
+        // if blockingService?.strictModeEnabled == true, timerService.stateBeforePauseIsFocus {
+        //     blockingService?.startBlocking()
+        // }
         timerService.start()
         HapticManager.shared.timerStart()
         notificationService.scheduleSessionEnd(
@@ -79,11 +116,24 @@ final class TimerViewModel {
             isBreak: timerService.isOnBreak
         )
         appState.petAnimationState = timerService.isOnBreak ? .breakTime : .focusing
+        liveActivityService.start(
+            petType: appState.selectedPetType,
+            tagName: selectedTag?.name,
+            timeRemaining: timerService.timeRemaining,
+            totalDuration: timerService.totalDuration,
+            sessionType: timerService.stateLabel
+        )
     }
 
     func stop(forced: Bool, modelContext: ModelContext, store: StoreKitService) {
         let wasFocusing = timerService.state == .focusing || timerService.state == .paused
         let shouldPenalize = forced || !timerService.canCancelWithoutPenalty
+
+        // FAMILY_CONTROLS_DISABLED
+        // blockingService?.stopBlocking()
+        notificationService.cancelPendingNotifications()
+        liveActivityService.end()
+        FloatingTimerManager.shared.hide()
 
         if wasFocusing && shouldPenalize {
             saveFailedSession(modelContext: modelContext)
@@ -91,15 +141,15 @@ final class TimerViewModel {
             soundService.playSessionFailed()
             HapticManager.shared.sessionFailed()
             appState.petAnimationState = .failed
+            Task {
+                try? await Task.sleep(for: .seconds(1.2))
+                appState.petAnimationState = .idle
+            }
         } else {
             timerService.stop(forced: forced)
             HapticManager.shared.timerStop()
+            appState.petAnimationState = .idle
         }
-
-        notificationService.cancelPendingNotifications()
-        liveActivityService.end()
-        FloatingTimerManager.shared.hide()
-        appState.petAnimationState = .idle
     }
 
     func confirmStop(modelContext: ModelContext, store: StoreKitService) {
@@ -114,7 +164,11 @@ final class TimerViewModel {
         handlePhaseCompleted(phase, modelContext: modelContext, store: store)
     }
 
-    func handlePhaseCompleted(_ completedPhase: TimerService.TimerState, modelContext: ModelContext, store: StoreKitService) {
+    func handlePhaseCompleted(
+        _ completedPhase: TimerService.TimerState,
+        modelContext: ModelContext,
+        store: StoreKitService
+    ) {
         switch completedPhase {
         case .focusing:
             saveCompletedSession(modelContext: modelContext, store: store)
@@ -123,6 +177,8 @@ final class TimerViewModel {
             HapticManager.shared.sessionComplete()
             appState.petAnimationState = .success
             heartsToday += 1
+            // FAMILY_CONTROLS_DISABLED
+            // blockingService?.stopBlocking()
 
             if timerService.isOnBreak {
                 soundService.playBreakStart()
@@ -132,24 +188,39 @@ final class TimerViewModel {
                         in: timerService.timeRemaining,
                         isBreak: true
                     )
+                    liveActivityService.start(
+                        petType: appState.selectedPetType,
+                        tagName: selectedTag?.name,
+                        timeRemaining: timerService.timeRemaining,
+                        totalDuration: timerService.totalDuration,
+                        sessionType: timerService.stateLabel
+                    )
+                } else {
+                    liveActivityService.end()
                 }
+            } else {
+                liveActivityService.end()
             }
-            updateLiveActivity()
 
         case .shortBreak, .longBreak:
             notificationService.cancelPendingNotifications()
             appState.petAnimationState = .idle
             liveActivityService.end()
+            // FAMILY_CONTROLS_DISABLED
+            // blockingService?.stopBlocking()
 
         default:
             break
         }
     }
+
     func skipBreak() {
         timerService.skipBreak()
         appState.petAnimationState = .idle
         notificationService.cancelPendingNotifications()
         liveActivityService.end()
+        // FAMILY_CONTROLS_DISABLED
+        // blockingService?.stopBlocking()
     }
 
     func refreshHeartsToday(sessions: [FocusSession]) {
@@ -159,6 +230,11 @@ final class TimerViewModel {
             session.wasSuccessful &&
             session.startDate.adjustedForNightOwl(nightOwlMode: nightOwl).startOfDay == today
         }.count
+        WidgetDataStore.refresh(
+            sessions: sessions,
+            nightOwlMode: nightOwl,
+            weekStartsOnMonday: UserDefaults.standard.bool(forKey: "weekStartsOnMonday")
+        )
     }
 
     private func saveCompletedSession(modelContext: ModelContext, store: StoreKitService) {
@@ -204,22 +280,18 @@ final class TimerViewModel {
         timerService.stop(forced: true)
     }
 
-    private func updateLiveActivity() {
-        liveActivityService.update(
-            timeRemaining: timerService.timeRemaining,
-            totalDuration: timerService.totalDuration,
-            sessionType: timerService.stateLabel,
-            tagName: selectedTag?.name
-        )
-    }
-
     private func startObserving() {
         observationTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
                 guard let self else { break }
                 if self.timerService.isRunning {
-                    self.updateLiveActivity()
+                    self.liveActivityService.update(
+                        timeRemaining: self.timerService.timeRemaining,
+                        totalDuration: self.timerService.totalDuration,
+                        sessionType: self.timerService.stateLabel,
+                        tagName: self.selectedTag?.name
+                    )
                     WatchConnectivityService.shared.sendTimerUpdate(
                         state: self.timerService.state.rawValue,
                         timeRemaining: self.timerService.timeRemaining,
@@ -228,11 +300,5 @@ final class TimerViewModel {
                 }
             }
         }
-    }
-}
-
-private extension StoreKitService {
-    func strictModeCheck() -> Bool {
-        false
     }
 }

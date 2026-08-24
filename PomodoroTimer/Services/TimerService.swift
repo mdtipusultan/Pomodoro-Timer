@@ -8,12 +8,14 @@ final class TimerService {
         case idle, focusing, shortBreak, longBreak, paused
     }
 
-    enum TimerMode {
+    enum TimerMode: String {
         case pomodoro, countdown
     }
 
     var state: TimerState = .idle
-    var mode: TimerMode = .pomodoro
+    var mode: TimerMode = .pomodoro {
+        didSet { UserDefaults.standard.set(mode.rawValue, forKey: AppGroup.Keys.timerMode) }
+    }
     var timeRemaining: TimeInterval = 25 * 60
     var totalDuration: TimeInterval = 25 * 60
     var currentCycle: Int = 0
@@ -54,6 +56,7 @@ final class TimerService {
     var lastCompletedFocusStartDate: Date?
     var pausedAtDate: Date?
     var accumulatedPausedTime: TimeInterval = 0
+    private var stateBeforePause: TimerState = .focusing
 
     var canCancelWithoutPenalty: Bool {
         guard let start = sessionStartDate else { return true }
@@ -61,19 +64,27 @@ final class TimerService {
     }
 
     var isRunning: Bool {
-        state == .focusing || state == .shortBreak || state == .longBreak
+        (state == .focusing || state == .shortBreak || state == .longBreak) && endDate != nil
     }
 
     var isOnBreak: Bool {
         state == .shortBreak || state == .longBreak
     }
 
+    var isAwaitingBreakStart: Bool {
+        isOnBreak && endDate == nil
+    }
+
+    var stateBeforePauseIsFocus: Bool {
+        stateBeforePause == .focusing
+    }
+
     var stateLabel: String {
         switch state {
         case .idle: return "Ready"
         case .focusing: return "Focusing"
-        case .shortBreak: return "Short Break"
-        case .longBreak: return "Long Break"
+        case .shortBreak: return isAwaitingBreakStart ? "Break Ready" : "Short Break"
+        case .longBreak: return isAwaitingBreakStart ? "Long Break Ready" : "Long Break"
         case .paused: return "Paused"
         }
     }
@@ -100,6 +111,8 @@ final class TimerService {
         static let timerEndDate = "timerEndDate"
         static let timerTotalDuration = "timerTotalDuration"
         static let timerCurrentCycle = "timerCurrentCycle"
+        static let pausedRemaining = "timerPausedRemaining"
+        static let stateBeforePause = "timerStateBeforePause"
     }
 
     init() {
@@ -110,6 +123,10 @@ final class TimerService {
         cyclesBeforeLongBreak = savedCycles > 0 ? savedCycles : 4
         autoStartBreaks = UserDefaults.standard.bool(forKey: Keys.autoStartBreaks)
         nightOwlMode = UserDefaults.standard.bool(forKey: Keys.nightOwlMode)
+        if let raw = UserDefaults.standard.string(forKey: AppGroup.Keys.timerMode),
+           let savedMode = TimerMode(rawValue: raw) {
+            mode = savedMode
+        }
         reloadSettings()
         restoreFromPersistence()
     }
@@ -133,22 +150,27 @@ final class TimerService {
             return
         }
 
-        if state == .idle {
-            state = .focusing
-            totalDuration = focusDuration
-            timeRemaining = focusDuration
-            currentCycle = 0
-        }
-
+        state = .focusing
+        totalDuration = focusDuration
+        timeRemaining = focusDuration
         sessionStartDate = Date()
         endDate = Date().addingTimeInterval(timeRemaining)
         persistState()
         startTicking()
     }
 
-    func startBreak(isLong: Bool) {
-        state = isLong ? .longBreak : .shortBreak
-        totalDuration = isLong ? longBreakDuration : shortBreakDuration
+    func startBreak(isLong: Bool? = nil) {
+        if isAwaitingBreakStart {
+            sessionStartDate = Date()
+            endDate = Date().addingTimeInterval(timeRemaining)
+            persistState()
+            startTicking()
+            return
+        }
+
+        let useLong = isLong ?? (currentCycle > 0 && currentCycle % cyclesBeforeLongBreak == 0)
+        state = useLong ? .longBreak : .shortBreak
+        totalDuration = useLong ? longBreakDuration : shortBreakDuration
         timeRemaining = totalDuration
         sessionStartDate = Date()
         endDate = Date().addingTimeInterval(timeRemaining)
@@ -158,63 +180,32 @@ final class TimerService {
 
     func pause() {
         guard isRunning else { return }
+        recalculateFromDates()
+        stateBeforePause = state
         pausedAtDate = Date()
         state = .paused
+        endDate = nil
         tickTask?.cancel()
         tickTask = nil
         persistState()
-    }
-
-    private func resumeFromPause() {
-        guard let pausedAt = pausedAtDate else { return }
-        accumulatedPausedTime += Date().timeIntervalSince(pausedAt)
-        pausedAtDate = nil
-
-        if state == .paused {
-            state = previousRunningState()
-        }
-
-        endDate = Date().addingTimeInterval(timeRemaining)
-        persistState()
-        startTicking()
-    }
-
-    private func previousRunningState() -> TimerState {
-        if currentCycle > 0 && timeRemaining <= shortBreakDuration {
-            let completedCycles = currentCycle
-            if completedCycles % cyclesBeforeLongBreak == 0 {
-                return .longBreak
-            }
-            return .shortBreak
-        }
-        return .focusing
     }
 
     func stop(forced: Bool = false) {
         tickTask?.cancel()
         tickTask = nil
         clearPersistence()
-
-        if !forced && canCancelWithoutPenalty {
-            resetToIdle()
-            return
-        }
-
         resetToIdle()
     }
 
-    func skipToBreak() {
-        guard state == .shortBreak || state == .longBreak else { return }
-        completeCurrentPhase()
-    }
-
     func skipBreak() {
-        guard isOnBreak else { return }
+        let wasLong = state == .longBreak || (state == .paused && stateBeforePause == .longBreak)
+        guard isOnBreak || (state == .paused && (stateBeforePause == .shortBreak || stateBeforePause == .longBreak)) else { return }
         tickTask?.cancel()
         tickTask = nil
-        state = .idle
-        timeRemaining = focusDuration
-        totalDuration = focusDuration
+        if wasLong {
+            currentCycle = 0
+        }
+        resetToIdle()
         clearPersistence()
     }
 
@@ -224,11 +215,20 @@ final class TimerService {
 
         let completedPhase = state
 
+        if mode == .countdown && state == .focusing {
+            lastCompletedFocusStartDate = sessionStartDate
+            lastCompletedPhase = .focusing
+            phaseCompletionCount += 1
+            resetToIdle()
+            clearPersistence()
+            return
+        }
+
         switch state {
         case .focusing:
             lastCompletedFocusStartDate = sessionStartDate
             currentCycle += 1
-            let isLongBreak = currentCycle % cyclesBeforeLongBreak == 0
+            let isLongBreak = currentCycle > 0 && currentCycle % cyclesBeforeLongBreak == 0
             if autoStartBreaks {
                 startBreak(isLong: isLongBreak)
             } else {
@@ -237,14 +237,13 @@ final class TimerService {
                 timeRemaining = totalDuration
                 sessionStartDate = nil
                 endDate = nil
-                clearPersistence()
+                persistAwaitingBreak()
             }
         case .shortBreak, .longBreak:
-            state = .idle
-            timeRemaining = focusDuration
-            totalDuration = focusDuration
-            sessionStartDate = nil
-            endDate = nil
+            if state == .longBreak {
+                currentCycle = 0
+            }
+            resetToIdle()
             clearPersistence()
         default:
             return
@@ -268,9 +267,10 @@ final class TimerService {
     }
 
     func handleForeground() {
-        guard isRunning || state == .paused else { return }
+        if state == .paused { return }
+        guard endDate != nil else { return }
         recalculateFromDates()
-        if timeRemaining <= 0 && isRunning {
+        if timeRemaining <= 0 && (state == .focusing || isOnBreak) {
             completeCurrentPhase()
         } else if isRunning {
             startTicking()
@@ -279,6 +279,17 @@ final class TimerService {
 
     func handleBackground() {
         persistState()
+    }
+
+    private func resumeFromPause() {
+        if let pausedAt = pausedAtDate {
+            accumulatedPausedTime += Date().timeIntervalSince(pausedAt)
+        }
+        pausedAtDate = nil
+        state = stateBeforePause
+        endDate = Date().addingTimeInterval(timeRemaining)
+        persistState()
+        startTicking()
     }
 
     private func startTicking() {
@@ -300,7 +311,15 @@ final class TimerService {
         endDate = nil
         pausedAtDate = nil
         accumulatedPausedTime = 0
-        currentCycle = 0
+    }
+
+    private func persistAwaitingBreak() {
+        UserDefaults.standard.set(state.rawValue, forKey: Keys.timerState)
+        UserDefaults.standard.set(totalDuration, forKey: Keys.timerTotalDuration)
+        UserDefaults.standard.set(currentCycle, forKey: Keys.timerCurrentCycle)
+        UserDefaults.standard.set(timeRemaining, forKey: Keys.pausedRemaining)
+        UserDefaults.standard.removeObject(forKey: Keys.timerEndDate)
+        UserDefaults.standard.removeObject(forKey: Keys.sessionStartDate)
     }
 
     private func persistState() {
@@ -309,6 +328,8 @@ final class TimerService {
         UserDefaults.standard.set(state.rawValue, forKey: Keys.timerState)
         UserDefaults.standard.set(totalDuration, forKey: Keys.timerTotalDuration)
         UserDefaults.standard.set(currentCycle, forKey: Keys.timerCurrentCycle)
+        UserDefaults.standard.set(timeRemaining, forKey: Keys.pausedRemaining)
+        UserDefaults.standard.set(stateBeforePause.rawValue, forKey: Keys.stateBeforePause)
     }
 
     private func clearPersistence() {
@@ -316,26 +337,56 @@ final class TimerService {
         UserDefaults.standard.removeObject(forKey: Keys.timerEndDate)
         UserDefaults.standard.removeObject(forKey: Keys.timerState)
         UserDefaults.standard.removeObject(forKey: Keys.timerTotalDuration)
-        UserDefaults.standard.removeObject(forKey: Keys.timerCurrentCycle)
+        UserDefaults.standard.removeObject(forKey: Keys.pausedRemaining)
+        UserDefaults.standard.removeObject(forKey: Keys.stateBeforePause)
     }
 
     private func restoreFromPersistence() {
+        currentCycle = UserDefaults.standard.integer(forKey: Keys.timerCurrentCycle)
+
+        if let raw = UserDefaults.standard.string(forKey: Keys.stateBeforePause),
+           let previous = TimerState(rawValue: raw) {
+            stateBeforePause = previous
+        }
+
         guard let stateRaw = UserDefaults.standard.string(forKey: Keys.timerState),
-              let savedState = TimerState(rawValue: stateRaw),
-              let endTimestamp = UserDefaults.standard.object(forKey: Keys.timerEndDate) as? Double else {
+              let savedState = TimerState(rawValue: stateRaw) else {
             resetToIdle()
             return
         }
 
-        state = savedState
         totalDuration = UserDefaults.standard.double(forKey: Keys.timerTotalDuration).nonZeroOr(focusDuration)
-        currentCycle = UserDefaults.standard.integer(forKey: Keys.timerCurrentCycle)
-        endDate = Date(timeIntervalSince1970: endTimestamp)
 
         if let startTimestamp = UserDefaults.standard.object(forKey: Keys.sessionStartDate) as? Double {
             sessionStartDate = Date(timeIntervalSince1970: startTimestamp)
         }
 
+        if savedState == .paused {
+            state = .paused
+            timeRemaining = UserDefaults.standard.double(forKey: Keys.pausedRemaining).nonZeroOr(focusDuration)
+            endDate = nil
+            return
+        }
+
+        if (savedState == .shortBreak || savedState == .longBreak),
+           UserDefaults.standard.object(forKey: Keys.timerEndDate) == nil {
+            state = savedState
+            let fallback = savedState == .longBreak ? longBreakDuration : shortBreakDuration
+            timeRemaining = UserDefaults.standard.double(forKey: Keys.pausedRemaining).nonZeroOr(fallback)
+            endDate = nil
+            return
+        }
+
+        guard let endTimestamp = UserDefaults.standard.object(forKey: Keys.timerEndDate) as? Double else {
+            state = savedState
+            if savedState == .idle {
+                timeRemaining = focusDuration
+            }
+            return
+        }
+
+        state = savedState
+        endDate = Date(timeIntervalSince1970: endTimestamp)
         recalculateFromDates()
 
         if timeRemaining <= 0 && savedState != .idle && savedState != .paused {

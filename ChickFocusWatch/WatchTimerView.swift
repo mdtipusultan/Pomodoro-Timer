@@ -1,12 +1,14 @@
 import SwiftUI
+import WatchConnectivity
 
 struct WatchTimerView: View {
     @State private var timeRemaining: TimeInterval = 25 * 60
     @State private var isRunning = false
     @State private var petType: PetType = .cat
+    @StateObject private var session = WatchSessionClient.shared
 
     private var progress: Double {
-        max(0, min(1, 1 - (timeRemaining / (25 * 60))) )
+        max(0, min(1, 1 - (timeRemaining / (25 * 60))))
     }
 
     var body: some View {
@@ -28,20 +30,59 @@ struct WatchTimerView: View {
                 .font(.system(.title2, design: .rounded).monospacedDigit())
 
             Button(isRunning ? "Stop" : "Start") {
+                session.send(action: isRunning ? "stop" : "start")
                 isRunning.toggle()
             }
             .tint(.orange)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .init("watchTimerUpdate"))) { notification in
-            if let time = notification.userInfo?["timeRemaining"] as? TimeInterval {
-                timeRemaining = time
-            }
-            if let state = notification.userInfo?["state"] as? String {
-                isRunning = state != "idle"
-            }
-            if let pet = notification.userInfo?["petType"] as? String {
-                petType = PetType(rawValue: pet) ?? .cat
-            }
+        .onAppear { session.activate() }
+        .onReceive(session.$timeRemaining) { timeRemaining = $0 }
+        .onReceive(session.$isRunning) { isRunning = $0 }
+        .onReceive(session.$petType) { petType = $0 }
+    }
+}
+
+@MainActor
+final class WatchSessionClient: NSObject, ObservableObject, WCSessionDelegate {
+    static let shared = WatchSessionClient()
+    @Published var timeRemaining: TimeInterval = 25 * 60
+    @Published var isRunning = false
+    @Published var petType: PetType = .cat
+
+    func activate() {
+        guard WCSession.isSupported() else { return }
+        WCSession.default.delegate = self
+        WCSession.default.activate()
+    }
+
+    func send(action: String) {
+        guard WCSession.default.activationState == .activated else { return }
+        WCSession.default.sendMessage(["action": action], replyHandler: nil, errorHandler: nil)
+    }
+
+    nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {}
+
+    nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        Task { @MainActor in
+            apply(message)
+        }
+    }
+
+    nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        Task { @MainActor in
+            apply(applicationContext)
+        }
+    }
+
+    private func apply(_ message: [String: Any]) {
+        if let time = message["timeRemaining"] as? TimeInterval {
+            timeRemaining = time
+        }
+        if let state = message["state"] as? String {
+            isRunning = state != "idle"
+        }
+        if let pet = message["petType"] as? String {
+            petType = PetType(rawValue: pet) ?? .cat
         }
     }
 }

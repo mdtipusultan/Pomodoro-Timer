@@ -48,14 +48,10 @@ struct FarmView: View {
 
     private func petCard(_ pet: Pet) -> some View {
         VStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(pet.type.color.opacity(0.16))
-                    .frame(width: 62, height: 62)
-                Image(systemName: pet.type.systemImage)
-                    .font(.system(size: 28))
-                    .foregroundStyle(pet.type.color)
-            }
+            Image(pet.type.imageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 62, height: 62)
 
             Text(pet.name ?? pet.type.displayName)
                 .font(.subheadline.weight(.semibold))
@@ -87,10 +83,11 @@ struct FarmView: View {
                     .fill(Color.appOrange.opacity(0.14))
                     .frame(width: 130, height: 130)
                 
-                Image(systemName: "cat.fill")
-                    .font(.system(size: 56))
-                    .foregroundStyle(Color.appOrange)
-                    .symbolEffect(.pulse, options: .repeating)
+                Image("EmptyFarm")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 180, height: 180)
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
             }
 
             VStack(spacing: 12) {

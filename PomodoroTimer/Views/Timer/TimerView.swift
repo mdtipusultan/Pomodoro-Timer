@@ -6,12 +6,15 @@ struct TimerView: View {
     @Environment(SoundService.self) private var soundService
     @Environment(AppState.self) private var appState
     @Environment(StoreKitService.self) private var store
+    // FAMILY_CONTROLS_DISABLED
+    // @EnvironmentObject private var blockingService: AppBlockingService
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Tag.sortOrder) private var tags: [Tag]
     @Query(sort: \FocusSession.startDate, order: .reverse) private var sessions: [FocusSession]
 
     @State private var viewModel: TimerViewModel?
     @State private var showPaywall = false
+    @State private var showTagManager = false
 
     var body: some View {
         NavigationStack {
@@ -21,7 +24,8 @@ struct TimerView: View {
                         get: { viewModel?.selectedTag },
                         set: { viewModel?.selectedTag = $0 }
                     ),
-                    tags: tags
+                    tags: tags,
+                    onManage: { showTagManager = true }
                 )
                 .padding(.top, 4)
 
@@ -57,7 +61,6 @@ struct TimerView: View {
                             .font(.system(size: 52, weight: .light, design: .rounded))
                             .monospacedDigit()
                             .contentTransition(.numericText())
-                            .accessibilityLabel("Time remaining: \(viewModel?.timeRemainingText ?? timerService.timeRemaining.formattedTimer)")
 
                         Text(timerService.stateLabel)
                             .font(.caption.weight(.semibold))
@@ -70,7 +73,6 @@ struct TimerView: View {
                                 (viewModel?.ringColor ?? .timerFocus).opacity(0.14),
                                 in: Capsule()
                             )
-                            .accessibilityLabel("Timer state: \(timerService.stateLabel)")
                     }
                 }
                 .padding(.vertical, 8)
@@ -88,8 +90,6 @@ struct TimerView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .appCardStyle(radius: 20)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(viewModel?.heartsToday ?? 0) completed sessions today")
 
                 Spacer()
             }
@@ -135,6 +135,9 @@ struct TimerView: View {
             .fullScreenCover(isPresented: $showPaywall) {
                 PaywallView()
             }
+            .sheet(isPresented: $showTagManager) {
+                TagManagerView()
+            }
             .onAppear {
                 if viewModel == nil {
                     viewModel = TimerViewModel(
@@ -143,8 +146,12 @@ struct TimerView: View {
                         notificationService: .shared,
                         liveActivityService: LiveActivityService(),
                         appState: appState
+                        // FAMILY_CONTROLS_DISABLED
+                        // blockingService: blockingService
                     )
                 }
+                // FAMILY_CONTROLS_DISABLED
+                // viewModel?.blockingService = blockingService
                 viewModel?.refreshHeartsToday(sessions: sessions)
                 viewModel?.processPendingPhaseCompletion(modelContext: modelContext, store: store)
                 if viewModel?.selectedTag == nil {
@@ -157,10 +164,11 @@ struct TimerView: View {
             .onChange(of: timerService.phaseCompletionCount) { _, _ in
                 viewModel?.processPendingPhaseCompletion(modelContext: modelContext, store: store)
             }
-            .onChange(of: timerService.timeRemaining) { _, new in
-                if new <= 10 && new > 0 && timerService.isRunning {
-                    soundService.playTick()
-                }
+            .onReceive(NotificationCenter.default.publisher(for: .watchDidRequestStart)) { _ in
+                viewModel?.startFocus(modelContext: modelContext, store: store)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .watchDidRequestStop)) { _ in
+                viewModel?.stop(forced: true, modelContext: modelContext, store: store)
             }
         }
     }
@@ -175,8 +183,19 @@ struct TimerView: View {
                     Label("Start Focus", systemImage: "play.fill")
                 }
                 .buttonStyle(AppPrimaryButtonStyle())
-                .accessibilityLabel("Start focus session")
-                .accessibilityHint("Begins a \(Int(timerService.focusDuration / 60)) minute focus session")
+            } else if timerService.isAwaitingBreakStart {
+                Button {
+                    viewModel?.startBreak()
+                } label: {
+                    Label("Start Break", systemImage: "cup.and.saucer.fill")
+                }
+                .buttonStyle(AppPrimaryButtonStyle(color: .breakGreen))
+                Button {
+                    viewModel?.skipBreak()
+                } label: {
+                    Label("Skip Break", systemImage: "forward.fill")
+                }
+                .buttonStyle(AppSecondaryButtonStyle())
             } else if timerService.isOnBreak && timerService.state != .paused {
                 Button {
                     viewModel?.skipBreak()
@@ -184,8 +203,6 @@ struct TimerView: View {
                     Label("Skip Break", systemImage: "forward.fill")
                 }
                 .buttonStyle(AppPrimaryButtonStyle(color: .breakGreen))
-                .accessibilityLabel("Skip break")
-                .accessibilityHint("Skip the break and return to focus mode")
             } else if timerService.state == .paused {
                 HStack(spacing: 12) {
                     Button {
@@ -220,7 +237,7 @@ struct TimerView: View {
                     .buttonStyle(AppSecondaryButtonStyle(tint: .dangerRed, fill: Color.dangerRed.opacity(0.14)))
 
                     Button {
-                        timerService.pause()
+                        viewModel?.pause()
                     } label: {
                         Label("Pause", systemImage: "pause.fill")
                     }
@@ -238,4 +255,6 @@ struct TimerView: View {
         .environment(SoundService())
         .environment(AppState())
         .environment(StoreKitService())
+        // FAMILY_CONTROLS_DISABLED
+        // .environmentObject(AppBlockingService())
 }

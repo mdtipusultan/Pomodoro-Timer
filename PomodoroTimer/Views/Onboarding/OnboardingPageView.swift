@@ -25,10 +25,11 @@ struct OnboardingPageView: View {
                     .frame(width: 180, height: 180)
                     .scaleEffect(appear ? 1 : 0.8)
                 
-                Image(systemName: icon)
-                    .font(.system(size: 76))
-                    .foregroundStyle(iconColor)
-                    .symbolEffect(.bounce, value: animateIcon)
+                Image("OnboardingCompanion")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 180, height: 180)
+                    .clipShape(Circle())
                     .scaleEffect(appear ? 1 : 0.5)
             }
 

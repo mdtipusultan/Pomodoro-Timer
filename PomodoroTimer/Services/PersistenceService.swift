@@ -5,11 +5,17 @@ import SwiftData
 enum PersistenceService {
     static func makeModelContainer() throws -> ModelContainer {
         let schema = Schema([FocusSession.self, Pet.self, Tag.self])
-        let configuration = ModelConfiguration(
+        let groupConfig = ModelConfiguration(
             schema: schema,
-            isStoredInMemoryOnly: false
+            isStoredInMemoryOnly: false,
+            groupContainer: .identifier(AppGroup.identifier)
         )
-        return try ModelContainer(for: schema, configurations: [configuration])
+        do {
+            return try ModelContainer(for: schema, configurations: [groupConfig])
+        } catch {
+            let local = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            return try ModelContainer(for: schema, configurations: [local])
+        }
     }
 
     static func seedDefaultTagsIfNeeded(context: ModelContext) {

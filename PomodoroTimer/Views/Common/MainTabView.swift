@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @Environment(AppState.self) private var appState
+    @Environment(TimerService.self) private var timerService
     @State private var selectedTab = 0
 
     var body: some View {
@@ -32,6 +33,21 @@ struct MainTabView: View {
                 .tag(3)
         }
         .tint(.appOrange)
+        .overlay(alignment: .topTrailing) {
+            if selectedTab != 0 && timerService.isRunning {
+                Button {
+                    selectedTab = 0
+                } label: {
+                    FloatingTimerView(
+                        timeRemaining: timerService.timeRemaining,
+                        petType: appState.selectedPetType
+                    )
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 8)
+                .padding(.trailing, 16)
+            }
+        }
         .onChange(of: selectedTab) { _, newValue in
             if newValue == 1 {
                 appState.markPetsViewed()
