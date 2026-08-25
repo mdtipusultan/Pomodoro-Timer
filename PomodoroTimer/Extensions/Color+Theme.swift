@@ -47,6 +47,87 @@ extension Color {
     static let petAlive = appOrange
     static let petDead = appSecondary
 
+    // Farm scene palette. Light renders a sunny day, dark renders dusk.
+    private static func farmTone(
+        light: (CGFloat, CGFloat, CGFloat),
+        dark: (CGFloat, CGFloat, CGFloat)
+    ) -> Color {
+        Color(uiColor: UIColor { traits in
+            let tone = traits.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: tone.0, green: tone.1, blue: tone.2, alpha: 1)
+        })
+    }
+
+    static let farmSkyTop = farmTone(
+        light: (0.51, 0.79, 0.96),
+        dark: (0.07, 0.09, 0.21)
+    )
+
+    static let farmSkyBottom = farmTone(
+        light: (0.85, 0.94, 0.99),
+        dark: (0.20, 0.19, 0.35)
+    )
+
+    static let farmHillFar = farmTone(
+        light: (0.53, 0.79, 0.56),
+        dark: (0.12, 0.19, 0.25)
+    )
+
+    static let farmHillNear = farmTone(
+        light: (0.44, 0.73, 0.44),
+        dark: (0.10, 0.23, 0.23)
+    )
+
+    static let farmGrassLight = farmTone(
+        light: (0.60, 0.83, 0.47),
+        dark: (0.13, 0.24, 0.21)
+    )
+
+    static let farmGrassDeep = farmTone(
+        light: (0.42, 0.71, 0.36),
+        dark: (0.08, 0.16, 0.15)
+    )
+
+    static let farmGrassBlade = farmTone(
+        light: (0.33, 0.61, 0.28),
+        dark: (0.21, 0.37, 0.29)
+    )
+
+    static let farmBarn = farmTone(
+        light: (0.82, 0.29, 0.25),
+        dark: (0.50, 0.20, 0.19)
+    )
+
+    static let farmBarnRoof = farmTone(
+        light: (0.39, 0.25, 0.20),
+        dark: (0.24, 0.16, 0.14)
+    )
+
+    static let farmWood = farmTone(
+        light: (0.76, 0.56, 0.35),
+        dark: (0.42, 0.31, 0.21)
+    )
+
+    static let farmWoodDark = farmTone(
+        light: (0.55, 0.38, 0.23),
+        dark: (0.28, 0.20, 0.14)
+    )
+
+    static let farmTreeTop = farmTone(
+        light: (0.32, 0.64, 0.37),
+        dark: (0.14, 0.30, 0.23)
+    )
+
+    static let farmSun = farmTone(
+        light: (1.0, 0.84, 0.34),
+        dark: (0.93, 0.93, 0.86)
+    )
+
+    static let farmFlower = farmTone(
+        light: (1.0, 0.93, 0.55),
+        dark: (0.85, 0.80, 0.55)
+    )
+
     static var appOrangeGradient: LinearGradient {
         LinearGradient(
             colors: [appOrange, Color(red: 1.0, green: 0.70, blue: 0.28)],
