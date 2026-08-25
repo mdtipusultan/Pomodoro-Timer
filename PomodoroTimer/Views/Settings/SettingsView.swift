@@ -4,6 +4,7 @@ struct SettingsView: View {
     @Environment(StoreKitService.self) private var store
     @Environment(SoundService.self) private var soundService
     @Environment(SettingsViewModel.self) private var settings
+    @Environment(\.modelContext) private var modelContext
     // FAMILY_CONTROLS_DISABLED
     // @EnvironmentObject private var blockingService: AppBlockingService
     @State private var showPaywall = false
@@ -159,7 +160,7 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Reminders") {
+                Section {
                     Toggle(isOn: dailyReminderBinding) {
                         Label("Daily reminder", systemImage: "alarm")
                     }
@@ -169,6 +170,23 @@ struct SettingsView: View {
                             selection: reminderTimeBinding,
                             displayedComponents: .hourAndMinute
                         )
+                    }
+
+                    Toggle(isOn: missedDayReminderBinding) {
+                        Label("Missed day reminder", systemImage: "bell.badge")
+                    }
+                    if settings.missedDayReminderEnabled {
+                        DatePicker(
+                            "Remind at",
+                            selection: missedDayTimeBinding,
+                            displayedComponents: .hourAndMinute
+                        )
+                    }
+                } header: {
+                    Text("Reminders")
+                } footer: {
+                    if settings.missedDayReminderEnabled {
+                        Text("Nudges you only on days you haven't finished a focus session yet.")
                     }
                 }
 
@@ -236,6 +254,35 @@ struct SettingsView: View {
             set: { newValue in
                 settings.dailyReminderEnabled = newValue
                 settings.applyDailyReminder()
+            }
+        )
+    }
+
+    private var missedDayReminderBinding: Binding<Bool> {
+        Binding(
+            get: { settings.missedDayReminderEnabled },
+            set: { newValue in
+                settings.missedDayReminderEnabled = newValue
+                settings.applyMissedDayReminder(context: modelContext)
+            }
+        )
+    }
+
+    private var missedDayTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                Calendar.current.date(
+                    from: DateComponents(
+                        hour: settings.missedDayReminderHour,
+                        minute: settings.missedDayReminderMinute
+                    )
+                ) ?? Date()
+            },
+            set: { date in
+                let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+                settings.missedDayReminderHour = components.hour ?? MissedDayReminderService.defaultHour
+                settings.missedDayReminderMinute = components.minute ?? MissedDayReminderService.defaultMinute
+                settings.applyMissedDayReminder(context: modelContext)
             }
         )
     }

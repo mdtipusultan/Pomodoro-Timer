@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftData
 import SwiftUI
 import UIKit
 
@@ -34,6 +35,18 @@ final class SettingsViewModel {
         didSet { UserDefaults.standard.set(dailyReminderMinute, forKey: AppGroup.Keys.dailyReminderMinute) }
     }
 
+    var missedDayReminderEnabled: Bool = false {
+        didSet { UserDefaults.standard.set(missedDayReminderEnabled, forKey: MissedDayReminderService.Keys.enabled) }
+    }
+
+    var missedDayReminderHour: Int = MissedDayReminderService.defaultHour {
+        didSet { UserDefaults.standard.set(missedDayReminderHour, forKey: MissedDayReminderService.Keys.hour) }
+    }
+
+    var missedDayReminderMinute: Int = MissedDayReminderService.defaultMinute {
+        didSet { UserDefaults.standard.set(missedDayReminderMinute, forKey: MissedDayReminderService.Keys.minute) }
+    }
+
     var themeSelection: String = "system" {
         didSet { UserDefaults.standard.set(themeSelection, forKey: Keys.themeSelection) }
     }
@@ -63,12 +76,28 @@ final class SettingsViewModel {
         dailyReminderEnabled = UserDefaults.standard.bool(forKey: AppGroup.Keys.dailyReminderEnabled)
         dailyReminderHour = UserDefaults.standard.object(forKey: AppGroup.Keys.dailyReminderHour) as? Int ?? 9
         dailyReminderMinute = UserDefaults.standard.object(forKey: AppGroup.Keys.dailyReminderMinute) as? Int ?? 0
+        missedDayReminderEnabled = UserDefaults.standard.bool(forKey: MissedDayReminderService.Keys.enabled)
+        missedDayReminderHour = UserDefaults.standard.object(forKey: MissedDayReminderService.Keys.hour) as? Int
+            ?? MissedDayReminderService.defaultHour
+        missedDayReminderMinute = UserDefaults.standard.object(forKey: MissedDayReminderService.Keys.minute) as? Int
+            ?? MissedDayReminderService.defaultMinute
         themeSelection = UserDefaults.standard.string(forKey: Keys.themeSelection) ?? "system"
         selectedAppIcon = UserDefaults.standard.string(forKey: Keys.selectedAppIcon) ?? "default"
     }
 
     func applySavedAppIcon() {
         AppIconService.apply(selection: selectedAppIcon)
+    }
+
+    func applyMissedDayReminder(context: ModelContext) {
+        guard missedDayReminderEnabled else {
+            MissedDayReminderService.refresh(context: context)
+            return
+        }
+        Task {
+            _ = await NotificationService.shared.requestAuthorization()
+            MissedDayReminderService.refresh(context: context)
+        }
     }
 
     func applyDailyReminder() {

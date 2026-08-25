@@ -1,150 +1,134 @@
 import SwiftUI
 
-struct FarmSpot {
-    var x: CGFloat
-    var y: CGFloat
-    var scale: CGFloat
-    var flipped: Bool
-    var bobDuration: Double
-    var bobDelay: Double
-}
-
-enum FarmLayout {
-    static let rowHeight: CGFloat = 112
-    static let topInset: CGFloat = 30
-    static let bottomInset: CGFloat = 24
-    static let maxVisible = 48
-
-    static func rows(count: Int, columns: Int) -> Int {
-        max(2, Int(ceil(Double(max(count, 1)) / Double(columns))))
-    }
-
-    static func height(count: Int, columns: Int) -> CGFloat {
-        topInset + CGFloat(rows(count: count, columns: columns)) * rowHeight + bottomInset
-    }
-
-    static func spot(index: Int, seed: UUID, columns: Int) -> FarmSpot {
-        var generator = SeededGenerator(seed: seed.stableSeed)
-        let row = index / columns
-        let column = index % columns
-        let slot = (CGFloat(column) + 0.5) / CGFloat(columns)
-        let drift = generator.value(in: -0.05...0.05)
-
-        return FarmSpot(
-            x: min(max(slot + drift, 0.12), 0.88),
-            y: topInset + CGFloat(row) * rowHeight + rowHeight / 2 + generator.value(in: -11...11),
-            scale: generator.value(in: 0.90...1.10),
-            flipped: generator.flag(),
-            bobDuration: Double(generator.value(in: 1.7...2.7)),
-            bobDelay: Double(generator.value(in: 0...1.3))
-        )
-    }
-
-    struct Decoration: Identifiable {
-        enum Kind {
-            case grass, flower, stone
-        }
-
-        let id: Int
-        let x: CGFloat
-        let y: CGFloat
-        let scale: CGFloat
-        let kind: Kind
-    }
-
-    static func decorations(rows: Int) -> [Decoration] {
-        var generator = SeededGenerator(seed: 0xDEC0_2A71)
-        let count = max(8, rows * 5)
-
-        return (0..<count).map { index in
-            let roll = generator.next() % 10
-            let kind: Decoration.Kind = roll < 6 ? .grass : (roll < 9 ? .flower : .stone)
-            return Decoration(
-                id: index,
-                x: generator.value(in: 0.05...0.95),
-                y: generator.value(in: 0.02...0.98),
-                scale: generator.value(in: 0.75...1.25),
-                kind: kind
-            )
-        }
-    }
-}
-
-struct FarmAnimalView: View {
-    let pet: Pet
-    let spot: FarmSpot
-    let isNew: Bool
-    let entranceDelay: Double
+struct FarmResidentView: View {
+    let resident: FarmResident
+    let name: String
     let onTap: () -> Void
 
     @State private var bobbing = false
     @State private var appeared = false
 
-    private let size: CGFloat = 74
+    /// Size of a fully grown companion. Everything scales down from here.
+    private let baseSize: CGFloat = 104
+
+    private var imageSize: CGFloat {
+        baseSize * resident.scale
+    }
+
+    private var isNew: Bool {
+        resident.raisedToday > 0
+    }
 
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 3) {
+            VStack(spacing: 6) {
+                Spacer(minLength: 0)
+
                 ZStack(alignment: .bottom) {
+                    FarmGrassTuftView(scale: 0.9)
+                        .offset(x: -imageSize * 0.46, y: 1)
+
+                    FarmGrassTuftView(scale: 0.7)
+                        .offset(x: imageSize * 0.44, y: 1)
+
+                    if resident.hasArrived {
+                        FarmFlowerView(scale: 0.85)
+                            .offset(x: imageSize * 0.6, y: 1)
+                    }
+
                     Ellipse()
-                        .fill(Color.farmGrassDeep.opacity(0.42))
-                        .frame(width: size * 0.46, height: 9)
+                        .fill(Color.farmGrassDeep.opacity(0.4))
+                        .frame(width: imageSize * 0.52, height: 10)
                         .blur(radius: 2.5)
-                        .scaleEffect(x: bobbing ? 0.88 : 1, y: bobbing ? 0.82 : 1)
+                        .scaleEffect(x: bobbing ? 0.9 : 1, y: bobbing ? 0.84 : 1)
 
                     if isNew {
                         Circle()
-                            .fill(Color.appOrange.opacity(0.30))
-                            .frame(width: size * 0.86, height: size * 0.86)
-                            .blur(radius: 12)
-                            .offset(y: -size * 0.34)
+                            .fill(Color.appOrange.opacity(0.32))
+                            .frame(width: imageSize * 0.9, height: imageSize * 0.9)
+                            .blur(radius: 14)
+                            .offset(y: -imageSize * 0.36)
                     }
 
-                    Image(pet.type.imageName)
+                    Image(resident.type.imageName)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: size, height: size)
-                        .scaleEffect(x: spot.flipped ? -1 : 1)
-                        .offset(y: bobbing ? -7 : -2)
+                        .frame(width: imageSize, height: imageSize)
+                        .opacity(resident.hasArrived ? 1 : 0.2)
+                        .grayscale(resident.hasArrived ? 0 : 1)
+                        .offset(y: bobbing ? -6 : -1)
                 }
-                .frame(width: size, height: size + 8, alignment: .bottom)
+                .frame(height: baseSize * FarmResident.maxScale * 0.86, alignment: .bottom)
 
-                if let name = pet.name, !name.isEmpty {
-                    Text(name)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 2)
-                        .background(Color.farmWoodDark.opacity(0.85), in: Capsule())
-                }
+                caption
             }
         }
-        .buttonStyle(FarmAnimalButtonStyle())
-        .scaleEffect(appeared ? spot.scale : spot.scale * 0.55)
+        .buttonStyle(FarmResidentButtonStyle())
+        .scaleEffect(appeared ? 1 : 0.7)
         .opacity(appeared ? 1 : 0)
-        .accessibilityLabel("\(pet.name ?? pet.type.displayName), raised on \(pet.raisedDate.formattedShortDate())")
-        .accessibilityHint("Double tap to view details")
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityText)
+        .accessibilityHint("Double tap for statistics")
         .onAppear {
             guard !appeared else { return }
-            withAnimation(.spring(response: 0.48, dampingFraction: 0.68).delay(entranceDelay)) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                 appeared = true
             }
+            guard resident.hasArrived else { return }
             withAnimation(
-                .easeInOut(duration: spot.bobDuration)
+                .easeInOut(duration: bobDuration)
                 .repeatForever(autoreverses: true)
-                .delay(spot.bobDelay)
+                .delay(bobDelay)
             ) {
                 bobbing = true
             }
         }
     }
+
+    private var caption: some View {
+        VStack(spacing: 3) {
+            Text(resident.hasArrived ? name : resident.type.displayName)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+
+            if resident.hasArrived {
+                Text("\(resident.stage.title) · \(resident.sessions)")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.farmWoodDark.opacity(0.82), in: Capsule())
+            } else {
+                Text("Not raised yet")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+        }
+        .shadow(color: .black.opacity(0.25), radius: 3, x: 0, y: 1)
+    }
+
+    private var accessibilityText: String {
+        guard resident.hasArrived else {
+            return "\(resident.type.displayName), not raised yet"
+        }
+        return "\(name), \(resident.stage.title), \(resident.sessions) sessions, \(resident.sizePercent) percent grown"
+    }
+
+    private var bobDuration: Double {
+        var generator = SeededGenerator(seed: resident.type.rawValue.stableSeed)
+        return Double(generator.value(in: 1.8...2.8))
+    }
+
+    private var bobDelay: Double {
+        Double(resident.type.rawValue.count % 5) * 0.22
+    }
 }
 
-struct FarmAnimalButtonStyle: ButtonStyle {
+struct FarmResidentButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 1.12 : 1)
+            .scaleEffect(configuration.isPressed ? 1.08 : 1)
             .animation(.spring(response: 0.28, dampingFraction: 0.55), value: configuration.isPressed)
     }
 }

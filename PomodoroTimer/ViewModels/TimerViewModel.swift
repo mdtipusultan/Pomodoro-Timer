@@ -262,6 +262,7 @@ final class TimerViewModel {
         appState.incrementUnviewedPets()
         try? modelContext.save()
         timerService.clearLastCompletedFocusStartDate()
+        MissedDayReminderService.refresh(context: modelContext)
     }
 
     private func saveFailedSession(modelContext: ModelContext) {

@@ -39,6 +39,7 @@ struct ChickFocusApp: App {
                 PersistenceService.seedDefaultTagsIfNeeded(context: sharedModelContainer.mainContext)
                 settingsViewModel.applySavedAppIcon()
                 settingsViewModel.applyDailyReminder()
+                MissedDayReminderService.refresh(context: sharedModelContainer.mainContext)
                 Task { await storeKit.loadProducts() }
             }
             .onChange(of: scenePhase) { _, phase in
@@ -49,6 +50,7 @@ struct ChickFocusApp: App {
                 case .active:
                     timerService.handleForeground()
                     FloatingTimerManager.shared.hide()
+                    MissedDayReminderService.refresh(context: sharedModelContainer.mainContext)
                 default:
                     break
                 }

@@ -2,9 +2,9 @@ import SwiftUI
 
 // MARK: - Deterministic randomness
 
-/// Xorshift generator so every animal keeps the same spot in the pasture
-/// across launches. `Hashable.hashValue` is seeded per process and would
-/// shuffle the farm on every cold start.
+/// Xorshift generator so scenery keeps the same layout across launches.
+/// `Hashable.hashValue` is seeded per process and would reshuffle the farm
+/// on every cold start.
 struct SeededGenerator {
     private var state: UInt64
 
@@ -26,23 +26,12 @@ struct SeededGenerator {
     mutating func value(in range: ClosedRange<CGFloat>) -> CGFloat {
         range.lowerBound + unit() * (range.upperBound - range.lowerBound)
     }
-
-    mutating func flag() -> Bool {
-        next() % 2 == 0
-    }
 }
 
-extension UUID {
+extension String {
     var stableSeed: UInt64 {
-        let bytes = uuid
-        let all: [UInt8] = [
-            bytes.0, bytes.1, bytes.2, bytes.3,
-            bytes.4, bytes.5, bytes.6, bytes.7,
-            bytes.8, bytes.9, bytes.10, bytes.11,
-            bytes.12, bytes.13, bytes.14, bytes.15
-        ]
         var hash: UInt64 = 0xcbf2_9ce4_8422_2325
-        for byte in all {
+        for byte in utf8 {
             hash ^= UInt64(byte)
             hash = hash &* 0x0000_0100_0000_01B3
         }
@@ -372,19 +361,22 @@ struct FarmSkyView: View {
     }
 
     // Hills are ellipses that sink below the grass line, so only the dome shows.
+    // Widths track the container so they stay wider than the screen on any device.
     private var hillsLayer: some View {
         ZStack(alignment: .bottom) {
             Ellipse()
                 .fill(Color.farmHillFar)
-                .frame(width: 330, height: 124)
-                .offset(x: -96)
+                .frame(height: 132)
+                .scaleEffect(x: 1.15)
+                .offset(x: -110)
 
             Ellipse()
                 .fill(Color.farmHillNear)
-                .frame(width: 270, height: 96)
-                .offset(x: 104)
+                .frame(height: 102)
+                .scaleEffect(x: 0.95)
+                .offset(x: 124)
         }
-        .padding(.bottom, groundStrip - 26)
+        .padding(.bottom, 6)
     }
 
     private var sceneryLayer: some View {
