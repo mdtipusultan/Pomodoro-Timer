@@ -19,7 +19,7 @@ final class NotificationService {
 
         let content = UNMutableNotificationContent()
         content.title = isBreak ? "Break's over!" : "Session complete! 🎉"
-        content.body = isBreak ? "Ready to focus again?" : "Your cat grew a little today."
+        content.body = isBreak ? "Ready to focus again?" : "Your kitty grew into a big cat today."
         content.sound = .default
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, seconds), repeats: false)
@@ -34,7 +34,7 @@ final class NotificationService {
 
     func scheduleDailyReminder(at hour: Int, minute: Int) {
         let content = UNMutableNotificationContent()
-        content.title = "Time to focus! 🐱"
+        content.title = "Time to focus with \(AppBrand.name)! 🐱"
         content.body = "Your companion is waiting for you."
         content.sound = .default
 

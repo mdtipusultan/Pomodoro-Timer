@@ -25,13 +25,7 @@ struct ChickFocusApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if hasCompletedOnboarding {
-                    MainTabView()
-                } else {
-                    SplashView(hasCompletedOnboarding: $hasCompletedOnboarding)
-                }
-            }
+            SplashView(hasCompletedOnboarding: $hasCompletedOnboarding)
             .environment(storeKit)
             .environment(timerService)
             .environment(soundService)

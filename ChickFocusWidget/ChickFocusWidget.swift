@@ -75,6 +75,9 @@ struct ChickFocusSmallWidget: View {
             Image(systemName: "cat.fill")
                 .font(.title)
                 .foregroundStyle(brandOrange)
+            Text("KittyFocus")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(brandOrange)
             Text("\(entry.todayFocusMinutes)m")
                 .font(.title2.bold())
             Text("Today")
@@ -176,7 +179,7 @@ struct ChickFocusWidget: Widget {
         StaticConfiguration(kind: kind, provider: ChickFocusWidgetProvider()) { entry in
             ChickFocusWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("ChickFocus")
+        .configurationDisplayName("KittyFocus")
         .description("Track your focus time and streak.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }

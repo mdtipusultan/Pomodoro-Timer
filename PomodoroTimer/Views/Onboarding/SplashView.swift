@@ -3,7 +3,6 @@ import SwiftUI
 struct SplashView: View {
     @Binding var hasCompletedOnboarding: Bool
     @State private var isActive = false
-    @State private var showCat = false
     @State private var showTitle = false
 
     var body: some View {
@@ -18,20 +17,19 @@ struct SplashView: View {
                 Color.appOrangeGradient
                     .ignoresSafeArea()
 
-                VStack(spacing: 16) {
-                    Image("PetCat")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 72, height: 72)
-                        .symbolEffect(.bounce, value: showCat)
-                        .opacity(showCat ? 1 : 0)
-                        .scaleEffect(showCat ? 1 : 0.5)
+                VStack(spacing: 12) {
+                    PetAnimationView(
+                        petType: .cat,
+                        animationState: .focusing,
+                        growth: 0,
+                        playsIntro: true
+                    )
 
                     VStack(spacing: 8) {
-                        Text("ChickFocus")
+                        Text(AppBrand.name)
                             .font(.largeTitle.bold())
                             .foregroundStyle(.white)
-                        Text("Focus. Grow. Thrive.")
+                        Text(AppBrand.tagline)
                             .font(.subheadline)
                             .foregroundStyle(.white.opacity(0.85))
                     }
@@ -40,13 +38,10 @@ struct SplashView: View {
                 }
             }
             .onAppear {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                    showCat = true
-                }
-                withAnimation(.easeOut(duration: 0.4).delay(0.2)) {
+                withAnimation(.easeOut(duration: 0.45).delay(0.25)) {
                     showTitle = true
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.35) {
                     withAnimation(.easeOut(duration: 0.3)) {
                         isActive = true
                     }

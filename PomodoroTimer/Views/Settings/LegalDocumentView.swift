@@ -31,25 +31,25 @@ struct LegalDocumentView: View {
         switch kind {
         case .privacy:
             return """
-            ChickFocus respects your privacy.
+            \(AppBrand.name) respects your privacy.
 
             Data we store
             Focus sessions, tags, companions, and settings stay on your device. Purchases are processed by Apple through StoreKit. We do not operate our own account server.
 
             Notifications
-            If you allow notifications, ChickFocus schedules local alerts for session end and optional daily reminders. These never leave your device.
+            If you allow notifications, \(AppBrand.name) schedules local alerts for session end and optional daily reminders. These never leave your device.
 
             Widgets and Watch
             Stats shared with widgets and Apple Watch use an App Group on this device.
 
             Contact
-            For privacy questions, use App Store support for ChickFocus.
+            For privacy questions, use App Store support for \(AppBrand.name).
             """
         case .terms:
             return """
-            ChickFocus Terms of Use
+            \(AppBrand.name) Terms of Use
 
-            ChickFocus is a focus timer with optional in-app purchases. Subscriptions and lifetime access are billed by Apple. You can manage or cancel subscriptions in your Apple ID settings.
+            \(AppBrand.name) is a focus timer with optional in-app purchases. Subscriptions and lifetime access are billed by Apple. You can manage or cancel subscriptions in your Apple ID settings.
 
             The timer, farm, and stats are provided as-is. Completing sessions grows virtual companions for fun; they are not a medical or productivity guarantee.
 

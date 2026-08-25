@@ -28,7 +28,7 @@ struct SettingsView: View {
                                         .font(.title3)
                                 }
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text("ChickFocus Pro")
+                                    Text(AppBrand.proName)
                                         .font(.headline)
                                     Text("Unlock history, companions, and more")
                                         .font(.caption)
@@ -177,7 +177,7 @@ struct SettingsView: View {
                         Text(settings.appVersion)
                             .foregroundStyle(.secondary)
                     } label: {
-                        Label("Version", systemImage: "info.circle")
+                        Label(AppBrand.name, systemImage: "cat.fill")
                     }
                     NavigationLink {
                         LegalDocumentView(kind: .privacy)

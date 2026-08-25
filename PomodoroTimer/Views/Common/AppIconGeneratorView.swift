@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Renders the ChickFocus app icon for export to Assets.xcassets.
+/// Renders the KittyFocus app icon for export to Assets.xcassets.
 /// Open in Preview, export at 1024×1024, then generate smaller sizes in Xcode.
 struct AppIconGeneratorView: View {
     var body: some View {

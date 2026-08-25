@@ -94,7 +94,7 @@ struct FarmView: View {
                 Text("Your farm is empty")
                     .font(.title2.bold())
 
-                Text("Complete a focus session to grow your first companion. Each successful session brings a new friend to your farm!")
+                Text("Complete a \(AppBrand.name) session to grow your first companion. Each successful session brings a new friend to your farm!")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -104,7 +104,7 @@ struct FarmView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Your farm is empty. Complete a focus session to grow your first companion.")
+        .accessibilityLabel("Your farm is empty. Complete a \(AppBrand.name) session to grow your first companion.")
     }
 }
 

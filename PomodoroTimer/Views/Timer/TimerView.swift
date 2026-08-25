@@ -42,10 +42,11 @@ struct TimerView: View {
                     )
                     .frame(width: 290, height: 290)
 
-                    VStack(spacing: 10) {
+                    VStack(spacing: 8) {
                         PetAnimationView(
                             petType: appState.selectedPetType,
-                            animationState: appState.petAnimationState
+                            animationState: appState.petAnimationState,
+                            growth: petGrowth
                         )
                         .onTapGesture {
                             if timerService.isOnBreak {
@@ -53,9 +54,14 @@ struct TimerView: View {
                                 HapticManager.shared.petInteraction()
                             }
                         }
-                        .accessibilityLabel("Pet companion")
+                        .accessibilityLabel(petGrowthCaption)
                         .accessibilityHint(timerService.isOnBreak ? "Tap to interact" : "")
                         .accessibilityAddTraits(.isButton)
+
+                        Text(petGrowthCaption)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(viewModel?.ringColor ?? .timerFocus)
+                            .opacity(0.9)
 
                         Text(viewModel?.timeRemainingText ?? timerService.timeRemaining.formattedTimer)
                             .font(.system(size: 52, weight: .light, design: .rounded))
@@ -98,7 +104,7 @@ struct TimerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("Focus")
+                    Text(AppBrand.name)
                         .font(.headline)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -130,7 +136,7 @@ struct TimerView: View {
                     viewModel?.confirmStop(modelContext: modelContext, store: store)
                 }
             } message: {
-                Text("Your companion won't grow if you stop now.")
+                Text("Your kitty won't grow into a big cat if you stop now.")
             }
             .fullScreenCover(isPresented: $showPaywall) {
                 PaywallView()
@@ -246,6 +252,34 @@ struct TimerView: View {
             }
         }
         .padding(.horizontal, 24)
+    }
+
+    private var petGrowth: Double {
+        switch appState.petAnimationState {
+        case .idle, .failed:
+            return 0
+        case .success, .breakTime:
+            return 1
+        case .focusing:
+            return timerService.progress
+        }
+    }
+
+    private var petGrowthCaption: String {
+        switch appState.petAnimationState {
+        case .idle:
+            return "A little kitty"
+        case .focusing:
+            if petGrowth < 0.33 { return "Tiny kitty" }
+            if petGrowth < 0.67 { return "Growing…" }
+            return "Becoming a cat"
+        case .breakTime:
+            return "Big cat nap"
+        case .success:
+            return "Big cat!"
+        case .failed:
+            return "Kitty needs you"
+        }
     }
 }
 

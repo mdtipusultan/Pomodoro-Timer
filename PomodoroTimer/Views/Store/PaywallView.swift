@@ -91,7 +91,7 @@ struct PaywallView: View {
             }
 
             VStack(spacing: 6) {
-                Text(store.isProUser ? "ChickFocus Pro" : "Unlock ChickFocus Pro")
+                Text(store.isProUser ? AppBrand.proName : "Unlock \(AppBrand.proName)")
                     .font(.title2.bold())
                     .multilineTextAlignment(.center)
 

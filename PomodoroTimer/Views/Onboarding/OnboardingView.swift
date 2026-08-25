@@ -11,19 +11,19 @@ struct OnboardingView: View {
                 OnboardingPageView(
                     icon: "cat.fill",
                     iconColor: .appOrange,
-                    title: "Meet your focus companion",
-                    subtitle: "Raise a virtual cat by completing focus sessions. Stay focused — your cat's life depends on it!",
+                    title: "Welcome to \(AppBrand.name)",
+                    subtitle: "Stay focused and your kitty grows into a big cat. Finish a session to raise a companion.",
                     animateIcon: animateIcon
                 )
                 .tag(0)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("Onboarding page 1 of 3. Meet your focus companion. Raise a virtual cat by completing focus sessions.")
+                .accessibilityLabel("Onboarding page 1 of 3. Welcome to \(AppBrand.name). Stay focused and your kitty grows into a big cat.")
 
                 OnboardingPageView(
                     icon: "timer",
                     iconColor: .purple,
                     title: "The Pomodoro method",
-                    subtitle: "Focus for 25 minutes, rest for 5. Build streaks, grow your pet, unlock new companions.",
+                    subtitle: "Focus for 25 minutes, rest for 5. As time goes, your kitty becomes a cat. Build streaks and unlock companions.",
                     animateIcon: animateIcon
                 )
                 .tag(1)
